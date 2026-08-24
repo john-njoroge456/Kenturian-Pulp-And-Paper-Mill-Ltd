@@ -3,6 +3,84 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-  <h2>Welcome</h2>
-  <p>This is a minimal Django starter site. Log in via /admin/ or implement auth views.</p>
+<div class="row">
+  <div class="col-12">
+    <h1 class="mt-2">Welcome</h1>
+    <p class="lead">This is a minimal Django starter site. Log in via <a href="/admin/">/admin/</a> or implement auth views.</p>
+  </div>
+</div>
+
+<!-- Products -->
+<div class="row mt-4">
+  <div class="col-12">
+    <h3>Products</h3>
+  </div>
+  {% if products %}
+    {% for product in products %}
+      <div class="col-sm-6 col-md-4 mb-3">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">{{ product.name }}</h5>
+            <p class="card-text">{{ product.description|truncatechars:120 }}</p>
+          </div>
+          <div class="card-footer d-flex justify-content-between align-items-center">
+            <small class="text-muted">KSh {{ product.price }}</small>
+            {% if product.owner %}<small class="text-muted">By {{ product.owner.username }}</small>{% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="col-12"><p class="text-muted">No products yet.</p></div>
+  {% endif %}
+</div>
+
+<!-- News -->
+<div class="row mt-4">
+  <div class="col-12">
+    <h3>News</h3>
+  </div>
+  {% if news_list %}
+    {% for n in news_list %}
+      <div class="col-md-4 mb-3">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5>{{ n.title }}</h5>
+            <p class="text-muted small">{{ n.published_at|date:"M d, Y" }}</p>
+            <p>{{ n.excerpt|default:n.body|truncatechars:140 }}</p>
+          </div>
+          <div class="card-footer">
+            <a href="#" class="btn btn-sm btn-outline-primary disabled">Read</a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="col-12"><p class="text-muted">No news yet.</p></div>
+  {% endif %}
+</div>
+
+<!-- Gallery -->
+<div class="row mt-4">
+  <div class="col-12">
+    <h3>Gallery</h3>
+  </div>
+  {% if gallery %}
+    <div class="col-12">
+      <div class="d-flex flex-wrap gap-2">
+        {% for g in gallery %}
+          <div style="width:150px; height:100px; overflow:hidden; border-radius:6px; border:1px solid #eee;">
+            {% if g.image %}
+              <img src="{{ g.image.url }}" alt="{{ g.title }}" style="width:100%; height:100%; object-fit:cover;">
+            {% else %}
+              <div class="d-flex align-items-center justify-content-center h-100 text-muted small">No image</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <div class="col-12"><p class="text-muted">No gallery images yet.</p></div>
+  {% endif %}
+</div>
 {% endblock %}
