@@ -1,66 +1,42 @@
-# Byte-compiled / optimized / DLL files
+# Python / Django
+*.pyc
 __pycache__/
-*.py[cod]
-*$py.class
-
-# C extensions
-*.so
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*,cover
-
-# Translations
-*.mo
-
-# Django stuff:
+*.sqlite3
 *.log
-local_settings.py
-db.sqlite3
-media
 
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
-
-# Virtualenv
+# Virtualenvs
 .venv/
-ENV/
-env/
 venv/
 
-# macOS
-.DS_Store
+# Environment / secrets
+.env
+.env.*.local
+.env.example
+.env.production.example
+
+# Backups
+*.bak
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# Static / build / media
 staticfiles/
 media/
-*.pyc
+mediafiles/
+node_modules/
+dist/
+
+# Logs, temp
+*.swp
+*.swo
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker / CI / local build artifacts
+docker-compose.override.yml
+.env.local
