@@ -64,3 +64,4 @@ venv/
 staticfiles/
 media/
 *.pyc
+*.bak
