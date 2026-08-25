@@ -1,0 +1,105 @@
+/* Chandaria-like corporate theme: green + gold accents */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+
+:root{
+  --brand-green: #0b6b3b;
+  --brand-gold:  #f2c037;
+  --brand-dark:  #0a2b1e;
+  --muted:       #6c757d;
+}
+
+body {
+  font-family: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: #222;
+  background: #fff;
+}
+
+/* Navbar */
+.navbar-custom {
+  background: linear-gradient(90deg, rgba(11,107,59,1) 0%, rgba(15,124,69,1) 100%);
+  border-bottom: 4px solid var(--brand-gold);
+}
+.navbar-brand .site-title {
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.6px;
+}
+.navbar-brand .site-sub {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.9);
+}
+
+/* Hero */
+.site-hero {
+  background: linear-gradient(180deg, rgba(11,107,59,0.06), rgba(255,255,255,0));
+  padding: 48px 0;
+  margin-top: 8px;
+}
+.hero-card {
+  border: 0;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(15,30,15,0.06);
+  padding: 28px;
+  border-radius: 8px;
+}
+
+/* Headings */
+h1, .hero-title {
+  color: var(--brand-dark);
+  font-weight: 700;
+}
+.lead {
+  color: var(--muted);
+}
+
+/* Cards */
+.card-custom {
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.card-custom:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(11,107,59,0.08);
+}
+
+/* Gallery thumbnails */
+.gallery-thumb {
+  width:150px;
+  height:100px;
+  overflow:hidden;
+  border-radius:8px;
+  border:1px solid #eee;
+  background:#f8f9fa;
+}
+
+/* Footer */
+.site-footer {
+  background: #fafafa;
+  border-top: 1px solid #e9ecef;
+  padding: 18px 0;
+  color: var(--muted);
+  font-size: .95rem;
+}
+
+/* Utility */
+.text-gold { color: var(--brand-gold); font-weight:600; }
+.btn-outline-gold {
+  color: var(--brand-gold);
+  border-color: var(--brand-gold);
+}
+@media (max-width: 768px) {
+  .gallery-thumb { width: 120px; height: 80px; }
+}
+
+/* Responsive tweaks for header/nav */
+@media (max-width: 991px) {
+  .site-title { font-size: 1.05rem; }
+  .site-sub { display: none; }
+  .site-logo { height:48px; }
+}
+@media (max-width: 575px) {
+  .navbar-custom { padding-top: 6px; padding-bottom: 6px; }
+  .site-hero { padding: 24px 0; }
+  .hero-card { padding: 18px; }
+}

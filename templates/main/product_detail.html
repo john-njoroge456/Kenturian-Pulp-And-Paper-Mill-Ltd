@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ product.name }} — Kenturian{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <h2>{{ product.name }}</h2>
+    <p class="text-muted">Price: <strong>{{ product.price }}</strong></p>
+    <div class="card card-custom">
+      <div class="card-body">
+        <p>{{ product.description }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <h5>Owner</h5>
+    {% if product.owner %}
+      <p>{{ product.owner.get_full_name|default:product.owner.username }}</p>
+    {% else %}
+      <p class="text-muted">—</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

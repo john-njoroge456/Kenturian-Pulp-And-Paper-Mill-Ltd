@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Contact — {{ COMPANY_NAME }}{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <h2>Contact us</h2>
+    {% if sent %}
+      <div class="alert alert-success">Thanks — your message has been sent.</div>
+    {% else %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="mb-3">
+          {{ form.name.label_tag }} {{ form.name }}
+          {{ form.name.errors }}
+        </div>
+        <div class="mb-3">
+          {{ form.email.label_tag }} {{ form.email }}
+          {{ form.email.errors }}
+        </div>
+        <div class="mb-3">
+          {{ form.subject.label_tag }} {{ form.subject }}
+          {{ form.subject.errors }}
+        </div>
+        <div class="mb-3">
+          {{ form.message.label_tag }} {{ form.message }}
+          {{ form.message.errors }}
+        </div>
+        <button class="btn btn-primary" type="submit">Send</button>
+      </form>
+    {% endif %}
+  </div>
+  <div class="col-md-4">
+    <h5>Our office</h5>
+    <p>{{ COMPANY_ADDRESS }}</p>
+    <p>Email: <a href="mailto:{{ COMPANY_EMAIL }}">{{ COMPANY_EMAIL }}</a></p>
+  </div>
+</div>
+{% endblock %}
