@@ -65,3 +65,4 @@ staticfiles/
 media/
 *.pyc
 *.bak
+*.bak
