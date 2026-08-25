@@ -1,0 +1,59 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Kenturian Pulp & Paper Mills Limited{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Kenturian Pulp & Paper Mills Limited — sustainable recycled paper and packaging solutions in Kenya.{% endblock %}">
+  <!-- Open Graph -->
+  <meta property="og:site_name" content="{{ COMPANY_NAME }}">
+  <meta property="og:title" content="{% block og_title %}Kenturian Pulp & Paper Mills Limited{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Kenturian Pulp & Paper Mills Limited — sustainable recycled paper and packaging solutions in Kenya.{% endblock %}">
+  <meta property="og:type" content="website">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link href="{% static 'css/theme.css' %}" rel="stylesheet">
+  <style>.site-logo { height:64px; width:auto; }</style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-custom fixed-top" role="navigation" aria-label="Main navigation">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="{% url 'main:index' %}">
+        <img src="{% static LOGO_STATIC %}" alt="{{ COMPANY_NAME }} logo" class="site-logo me-3" onerror="this.style.display='none'">
+        <div class="d-none d-lg-block">
+          <div class="site-title">KENTURIAN PULP &amp; PAPER MILLS LIMITED</div>
+          <div class="site-sub">Proudly recycled &middot; Nairobi, Kenya</div>
+        </div>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMain">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link text-white" href="{% url 'main:index' %}">Home</a></li>
+          <li class="nav-item"><a class="nav-link text-white" href="{% url 'main:contact' %}">Contact</a></li>
+          <li class="nav-item"><a class="nav-link text-white" href="/admin/">Admin</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <header class="site-hero">
+    <div class="container">
+      <div class="hero-card">
+        {% block hero %}{% endblock %}
+      </div>
+    </div>
+  </header>
+  <main class="container my-5" role="main">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer mt-auto" role="contentinfo">
+    <div class="container">
+      &copy; {{ now|date:"Y" }} {{ COMPANY_NAME }} &mdash; Contact: {{ COMPANY_EMAIL }}
+    </div>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

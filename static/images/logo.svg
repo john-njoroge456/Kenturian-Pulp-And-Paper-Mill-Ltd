@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="120" viewBox="0 0 400 120">
+  <defs>
+    <style>
+      .title { font: bold 20px 'Arial'; fill: #077a3a; }
+      .subtitle { font: 14px 'Arial'; fill: #0b5e2f; }
+    </style>
+  </defs>
+  <!-- simple shield icon -->
+  <g transform="translate(10,10)">
+    <path d="M30 5 L70 5 L90 25 C90 55 60 85 50 95 C40 85 10 55 10 25 Z" fill="#fff2b2" stroke="#f2d23a" stroke-width="3"/>
+    <!-- sun circle -->
+    <circle cx="50" cy="25" r="8" fill="#f2d23a" />
+    <!-- crossing lines -->
+    <g stroke="#f2d23a" stroke-width="3" stroke-linecap="round">
+      <line x1="28" y1="78" x2="72" y2="32" />
+      <line x1="72" y1="78" x2="28" y2="32" />
+    </g>
+  </g>
+  <!-- text -->
+  <text x="120" y="40" class="title">KENTURIAN PULP &amp; PAPER MILLS LIMITED</text>
+  <text x="120" y="64" class="subtitle">P.O.BOX: 39822 - 00623 Nairobi (Kenya) | Email: hq@kenturian.co.ke</text>
+</svg>
