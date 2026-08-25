@@ -29,3 +29,19 @@ Docker (quickstart)
 
 Notes on static and media
 - For production, configure a cloud object store (S3, GCS) or a proper static/media server. The docker setup includes volumes for media and static for development only.
+
+Production notes (static files)
+- Install requirements and set environment variables (SECRET_KEY, DEBUG=False, DATABASE_URL, COMPANY_EMAIL, EMAIL_*).
+- Run: python manage.py collectstatic --noinput
+  This collects static files into STATIC_ROOT (staticfiles) which WhiteNoise serves.
+
+Using WhiteNoise
+- We added whitenoise to requirements and settings to allow static serving in simple deployments.
+- For more robust production, front the app with a CDN or object storage (S3) for static + media.
+
+Example Render/Heroku checklist
+- Use gunicorn in Procfile: web: gunicorn mysite.wsgi
+- Ensure DATABASE_URL, SECRET_KEY, ALLOWED_HOSTS, and EMAIL_* variables are set in the host.
+- Run migrations and collectstatic as part of deploy:
+  python manage.py migrate
+  python manage.py collectstatic --noinput

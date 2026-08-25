@@ -2,62 +2,63 @@
 
 {% block title %}Home{% endblock %}
 
+{% block hero %}
+<div class="row align-items-center">
+  <div class="col-md-8">
+    <h1 class="hero-title mb-2">Sustainable paper solutions for industry and community</h1>
+    <p class="lead mb-0">We produce high-quality paper and packaging materials from recycled fibers — supporting circular economy and local jobs in Nairobi.</p>
+  </div>
+  <div class="col-md-4 text-md-end mt-3 mt-md-0">
+    <a href="/contact/" class="btn btn-outline-gold">Contact</a>
+    <a href="/admin/" class="btn btn-outline-gold ms-2">Admin</a>
+  </div>
+</div>
+{% endblock %}
+
 {% block content %}
 <div class="row">
-  <div class="col-12">
-    <h1 class="mt-2">Welcome</h1>
-    <p class="lead">This is a minimal Django starter site. Log in via <a href="/admin/">/admin/</a> or implement auth views.</p>
-  </div>
-</div>
-
-<!-- Products -->
-<div class="row mt-4">
-  <div class="col-12">
-    <h3>Products</h3>
-  </div>
-  {% if products %}
-    {% for product in products %}
-      <div class="col-sm-6 col-md-4 mb-3">
-        <div class="card h-100">
-          <div class="card-body">
-            <h5 class="card-title">{{ product.name }}</h5>
-            <p class="card-text">{{ product.description|truncatechars:120 }}</p>
+  <div class="col-md-8">
+    <h3 class="mb-3">News</h3>
+    {% if news_list %}
+      <div class="row">
+        {% for n in news_list %}
+          <div class="col-12 mb-3">
+            <div class="card card-custom">
+              <div class="card-body">
+                <h5 class="card-title">{{ n.title }}</h5>
+                <p class="text-muted small">{{ n.published_at|date:"M d, Y" }}</p>
+                <p class="card-text">{{ n.excerpt|default:n.body|truncatechars:180 }}</p>
+              </div>
+              <div class="card-footer bg-white border-0">
+                <a class="btn btn-sm btn-outline-primary disabled">Read</a>
+              </div>
+            </div>
           </div>
-          <div class="card-footer d-flex justify-content-between align-items-center">
-            <small class="text-muted">KSh {{ product.price }}</small>
-            {% if product.owner %}<small class="text-muted">By {{ product.owner.username }}</small>{% endif %}
-          </div>
-        </div>
+        {% endfor %}
       </div>
-    {% endfor %}
-  {% else %}
-    <div class="col-12"><p class="text-muted">No products yet.</p></div>
-  {% endif %}
-</div>
-
-<!-- News -->
-<div class="row mt-4">
-  <div class="col-12">
-    <h3>News</h3>
+    {% else %}
+      <p class="text-muted">No news yet.</p>
+    {% endif %}
   </div>
-  {% if news_list %}
-    {% for n in news_list %}
-      <div class="col-md-4 mb-3">
-        <div class="card h-100">
-          <div class="card-body">
-            <h5>{{ n.title }}</h5>
-            <p class="text-muted small">{{ n.published_at|date:"M d, Y" }}</p>
-            <p>{{ n.excerpt|default:n.body|truncatechars:140 }}</p>
-          </div>
-          <div class="card-footer">
-            <a href="#" class="btn btn-sm btn-outline-primary disabled">Read</a>
-          </div>
-        </div>
-      </div>
-    {% endfor %}
-  {% else %}
-    <div class="col-12"><p class="text-muted">No news yet.</p></div>
-  {% endif %}
+
+  <div class="col-md-4">
+    <h3 class="mb-3">Products</h3>
+    {% if products %}
+      <ul class="list-group">
+        {% for p in products %}
+          <li class="list-group-item d-flex justify-content-between align-items-start">
+            <div>
+              <div class="fw-bold"><a href="{% url 'main:product_detail' p.pk %}">{{ p.name }}</a></div>
+              <small class="text-muted">{{ p.description|truncatechars:60 }}</small>
+            </div>
+            <span class="badge bg-light text-gold border">{{ p.price }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted">No products yet.</p>
+    {% endif %}
+  </div>
 </div>
 
 <!-- Gallery -->
@@ -65,22 +66,102 @@
   <div class="col-12">
     <h3>Gallery</h3>
   </div>
-  {% if gallery %}
-    <div class="col-12">
-      <div class="d-flex flex-wrap gap-2">
-        {% for g in gallery %}
-          <div style="width:150px; height:100px; overflow:hidden; border-radius:6px; border:1px solid #eee;">
-            {% if g.image %}
-              <img src="{{ g.image.url }}" alt="{{ g.title }}" style="width:100%; height:100%; object-fit:cover;">
-            {% else %}
-              <div class="d-flex align-items-center justify-content-center h-100 text-muted small">No image</div>
-            {% endif %}
-          </div>
-        {% endfor %}
+  <div class="col-12">
+    <div class="d-flex flex-wrap gap-3">
+      {% for g in gallery %}
+        <button class="btn p-0 gallery-thumb" type="button" data-bs-toggle="modal" data-bs-target="#galleryModal" data-src="{{ g.image.url }}" data-title="{{ g.title }}" aria-label="Open {{ g.title }}">
+          {% if g.image %}
+            <img src="{{ g.image.url }}" alt="{{ g.title }}" style="width:100%; height:100%; object-fit:cover;">
+          {% else %}
+            <div class="d-flex align-items-center justify-content-center h-100 small text-muted">No image</div>
+          {% endif %}
+        </button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Modal (single modal reused for all images) -->
+<div class="modal fade" id="galleryModal" tabindex="-1" aria-labelledby="galleryModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="galleryModalLabel"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="galleryModalImg" src="" alt="" style="max-width:100%; max-height:70vh; object-fit:contain;">
+      </div>
+      <div class="modal-footer d-flex justify-content-between">
+        <div class="me-auto">
+          <small id="galleryModalCaption" class="text-muted"></small>
+        </div>
+        <div>
+          <button type="button" class="btn btn-outline-secondary me-2" id="modalPrev" aria-label="Previous image">&larr;</button>
+          <button type="button" class="btn btn-outline-secondary" id="modalNext" aria-label="Next image">&rarr;</button>
+        </div>
       </div>
     </div>
-  {% else %}
-    <div class="col-12"><p class="text-muted">No gallery images yet.</p></div>
-  {% endif %}
+  </div>
 </div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Gather gallery buttons
+  const buttons = Array.from(document.querySelectorAll('.gallery-thumb'));
+  let current = -1;
+
+  function openModal(index) {
+    const btn = buttons[index];
+    const src = btn.dataset.src;
+    const title = btn.dataset.title || '';
+    const img = document.getElementById('galleryModalImg');
+    const label = document.getElementById('galleryModalLabel');
+    const caption = document.getElementById('galleryModalCaption');
+
+    img.src = src;
+    img.alt = title;
+    label.textContent = title;
+    caption.textContent = title;
+    current = index;
+  }
+
+  // attach click handlers
+  buttons.forEach((b, i) => {
+    b.addEventListener('click', () => openModal(i));
+  });
+
+  // prev/next
+  document.getElementById('modalPrev').addEventListener('click', () => {
+    if (current > 0) openModal(current - 1);
+  });
+  document.getElementById('modalNext').addEventListener('click', () => {
+    if (current < buttons.length - 1) openModal(current + 1);
+  });
+
+  // keyboard navigation when modal is shown
+  const modalEl = document.getElementById('galleryModal');
+  modalEl.addEventListener('shown.bs.modal', () => {
+    document.addEventListener('keydown', keyHandler);
+  });
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    document.removeEventListener('keydown', keyHandler);
+  });
+
+  function keyHandler(e) {
+    if (e.key === 'ArrowLeft') {
+      if (current > 0) openModal(current - 1);
+    } else if (e.key === 'ArrowRight') {
+      if (current < buttons.length - 1) openModal(current + 1);
+    } else if (e.key === 'Escape') {
+      // Dismiss via Bootstrap
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      modal.hide();
+    }
+  }
+});
+</script>
 {% endblock %}

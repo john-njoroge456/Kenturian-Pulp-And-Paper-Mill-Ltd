@@ -61,3 +61,6 @@ venv/
 
 # macOS
 .DS_Store
+staticfiles/
+media/
+*.pyc
