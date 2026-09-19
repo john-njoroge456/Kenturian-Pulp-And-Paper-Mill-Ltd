@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block hero %}
+<section class="page-hero page-hero-careers" {% if hero_image %}style="background-image: url('{{ hero_image.image.url }}');"{% endif %}>
+  <div class="hero-overlay"></div>
+  <div class="container text-center hero-content">
+    <h1>{{ job.title }}</h1>
+    <p class="lead">
+      {% if job.department %}{{ job.department }}{% endif %}
+      {% if job.location %} &middot; {{ job.location }}{% endif %}
+      {% if job.employment_type %} &middot; {{ job.employment_type }}{% endif %}
+      {% if job.qualification %} &middot; {{ job.get_qualification_display }}{% endif %}
+    </p>
+    <div class="breadcrumb-text">
+      <a href="{% url 'main:index' %}" class="breadcrumb-link">Home</a> /
+      <a href="{% url 'main:careers' %}" class="breadcrumb-link">Careers</a> / {{ job.title }}
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<section class="py-5">
+  <div class="container">
+   <div class="job-overview" data-aos="fade-up">
+  <div class="section-label">
+    <span class="label-dot"></span> ABOUT THIS ROLE
+  </div>
+
+ <div class="job-key-details" data-aos="fade-up" data-aos-delay="100">
+    {% if job.department %}
+<div class="key-detail">
+<i class="bi bi-diagram-3"></i>
+<span>{{ job.department }}</span>
+</div>
+    {% endif %}
+    {% if job.location %}
+<div class="key-detail">
+<i class="bi bi-geo-alt"></i>
+<span>{{ job.location }}</span>
+</div>
+    {% endif %}
+    {% if job.employment_type %}
+<div class="key-detail">
+<i class="bi bi-clock"></i>
+<span>{{ job.employment_type }}</span>
+</div>
+    {% endif %}
+    {% if job.qualification %}
+<div class="key-detail">
+<i class="bi bi-mortarboard"></i>
+<span>{{ job.get_qualification_display }}</span>
+</div>
+    {% endif %}
+</div>
+  <div class="job-detail-body" data-aos="fade-up" data-aos-delay="200">
+    {{ job.description|linebreaks }}
+  </div>
+</div>
+
+    <div class="application-form-wrap mt-5">
+      {% if sent %}
+        <div class="application-success-card text-center" data-aos="zoom-in">
+          <div class="success-check">
+            <i class="bi bi-check-lg"></i>
+          </div>
+          <h3>Application received!</h3>
+          <p>Thanks for applying for the role of  <strong>{{ job.title }}</strong> — we'll be in touch soon.</p>
+         <a href="{% url 'main:careers' %}" class="btn btn-arrow-circle btn-light-arrow mt-3">
+  View more openings <i class="bi bi-arrow-up-right"></i>
+</a>
+        </div>
+      {% else %}
+        <div class="application-form-card" data-aos="fade-up">
+         
+          <h3 class="text-center mb-4">Apply for {{ job.title }}</h3>
+          <form method="post" enctype="multipart/form-data" class="application-form">
+            {% csrf_token %}
+            <div data-aos="fade-up" data-aos-delay="0">
+              <label for="{{ form.name.id_for_label }}"><i class="bi bi-person"></i> Full Name</label>
+              {{ form.name }}
+            </div>
+            <div data-aos="fade-up" data-aos-delay="80">
+              <label for="{{ form.email.id_for_label }}"><i class="bi bi-envelope"></i> Email</label>
+              {{ form.email }}
+            </div>
+            <div data-aos="fade-up" data-aos-delay="160">
+              <label for="{{ form.phone.id_for_label }}"><i class="bi bi-telephone"></i> Phone</label>
+              {{ form.phone }}
+            </div>
+            <div data-aos="fade-up" data-aos-delay="240">
+              <label for="{{ form.message.id_for_label }}"><i class="bi bi-chat-left-text"></i> Why you're a fit</label>
+              {{ form.message }}
+            </div>
+            <div data-aos="fade-up" data-aos-delay="320">
+              <label for="{{ form.cv.id_for_label }}"><i class="bi bi-paperclip"></i> Upload CV</label>
+              {{ form.cv }}
+            </div>
+            {% if form.errors %}
+              <p class="form-error-note">Please check the fields above and try again.</p>
+            {% endif %}
+            <div class="text-center mt-4" data-aos="fade-up" data-aos-delay="400">
+              <button type="submit" class="btn btn-arrow-circle btn-light-arrow">
+  Submit Application <i class="bi bi-arrow-up-right"></i>
+</button>
+            </div>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="text-center mt-4">
+      <a href="{% url 'main:careers' %}">&larr; Back to all vacancies</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

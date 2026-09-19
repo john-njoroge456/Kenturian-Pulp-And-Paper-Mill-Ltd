@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Privacy Policy{% endblock %}
+
+{% block content %}
+<section class="section-block">
+  <div class="container news-article-wrap">
+    <h1 class="section-heading mb-4">Privacy Policy</h1>
+    <div class="article-body">
+      <p>Last updated: {% now "F j, Y" %}</p>
+      <p>{{ COMPANY_NAME }} ("we", "us", "our") respects your privacy. This page explains what information we collect through this website and how we use it.</p>
+
+      <h4>Information We Collect</h4>
+      <p>We may collect contact details you provide through our contact form, order form, or job application form — such as your name, email, phone number, and message content.</p>
+
+      <h4>How We Use It</h4>
+      <p>We use this information solely to respond to inquiries, process orders, and review job applications. We do not sell or share your information with third parties for marketing purposes.</p>
+
+      <h4>Data From Job Applications</h4>
+      <p>If you apply for a position through our Careers page, the details and documents you submit (such as your CV) are used only for reviewing your application and are retained for the duration of the hiring process.</p>
+
+      <h4>Cookies</h4>
+<p>This website uses only essential cookies required for basic functionality and security, such as protecting forms from unauthorized submissions. We do not currently use tracking, analytics, or advertising cookies.</p>
+
+      <h4>Data Storage &amp; Security</h4>
+      <p>Information submitted through this site is stored securely and access is limited to authorized staff who need it to fulfill orders, respond to inquiries, or process applications.</p>
+
+      <h4>Third Parties</h4>
+      <p>Order and contact details may be shared with our internal accounting and invoicing systems solely for the purpose of processing and fulfilling your order.</p>
+
+      <h4>Your Rights</h4>
+      <p>You may request that we correct or delete the information we hold about you at any time by contacting us using the details below.</p>
+
+      <h4>Contact Us</h4>
+      <p>If you have questions about this policy, contact us at <a href="mailto:{{ COMPANY_EMAIL }}">{{ COMPANY_EMAIL }}</a>.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

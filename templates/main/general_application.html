@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block hero %}
+<section class="page-hero page-hero-careers" {% if hero_image %}style="background-image: url('{{ hero_image.image.url }}');"{% endif %}>
+  <div class="hero-overlay"></div>
+  <div class="container text-center hero-content">
+    <h1>Send Your CV</h1>
+    <p class="lead">We'll keep you in mind for upcoming opportunities</p>
+    <div class="breadcrumb-text">
+      <a href="{% url 'main:index' %}" class="breadcrumb-link">Home</a> /
+      <a href="{% url 'main:careers' %}" class="breadcrumb-link">Careers</a> / Send Your CV
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<section class="py-5">
+  <div class="container">
+    <div class="application-form-wrap">
+      {% if sent %}
+        <div class="application-success-card text-center" data-aos="zoom-in">
+          <div class="success-check">
+            <i class="bi bi-check-lg"></i>
+          </div>
+          <h3>CV received!</h3>
+          <p>Thanks for your interest in Kenturian — we'll reach out if a matching role opens up.</p>
+          <a href="{% url 'main:careers' %}" class="btn btn-arrow-circle btn-light-arrow mt-3">
+            View current openings <i class="bi bi-arrow-up-right"></i>
+          </a>
+        </div>
+      {% else %}
+        <div class="application-form-card" data-aos="fade-up">
+         
+          <h3 class="text-center mb-4">Tell us about yourself</h3>
+          <form method="post" enctype="multipart/form-data" class="application-form">
+            {% csrf_token %}
+            <div>
+              <label for="{{ form.name.id_for_label }}"><i class="bi bi-person"></i> Full Name</label>
+              {{ form.name }}
+            </div>
+            <div>
+              <label for="{{ form.email.id_for_label }}"><i class="bi bi-envelope"></i> Email</label>
+              {{ form.email }}
+            </div>
+            <div>
+              <label for="{{ form.phone.id_for_label }}"><i class="bi bi-telephone"></i> Phone</label>
+              {{ form.phone }}
+            </div>
+            <div>
+              <label for="{{ form.message.id_for_label }}"><i class="bi bi-chat-left-text"></i> What role interests you?</label>
+              {{ form.message }}
+            </div>
+            <div>
+              <label for="{{ form.cv.id_for_label }}"><i class="bi bi-paperclip"></i> Upload CV</label>
+              {{ form.cv }}
+            </div>
+            {% if form.errors %}
+              <p class="form-error-note">Please check the fields above and try again.</p>
+            {% endif %}
+            <div class="text-center mt-4">
+              <button type="submit" class="btn btn-arrow-circle btn-light-arrow">
+  Submit <i class="bi bi-arrow-up-right"></i>
+</button>
+<div class="text-center mt-4">
+  <a href="{% url 'main:careers' %}">&larr; Back to all vacancies</a>
+</div>
+            </div>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

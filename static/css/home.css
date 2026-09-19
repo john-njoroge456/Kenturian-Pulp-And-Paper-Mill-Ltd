@@ -1,0 +1,78 @@
+/* home.css — layout inspired by polyafric but using your brand color */
+
+/* fallback brand color if --brand-blue not defined */
+:root {
+  --home-brand-blue: var(--brand-blue, #243f55);
+  --home-accent: #0b7cd6;
+}
+
+/* HERO carousel image sizing and overlay */
+#hero { position: relative; overflow: hidden; }
+.carousel-image {
+  height: 420px;
+  background-size: cover;
+  background-position: center;
+  filter: saturate(0.95);
+}
+.carousel-caption {
+  position: absolute;
+  left: 4%;
+  bottom: 20%;
+  z-index: 3;
+  color: #fff;
+  max-width: 56%;
+  text-shadow: 0 3px 10px rgba(0,0,0,0.5);
+}
+.hero-title {
+  font-size: 2.1rem;
+  font-weight: 700;
+  margin-bottom: .5rem;
+}
+.hero-sub { font-size: 1.05rem; opacity: 0.95; color: rgba(255,255,255,0.95); }
+
+/* Services area */
+.section-title { font-size: 1.6rem; font-weight:700; margin-bottom: .5rem; }
+.service-card {
+  background: transparent;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+/* About / Products / News styling */
+#about .img-fluid, #products .img-fluid { max-width: 100%; }
+
+/* Make section headings consistent */
+h3.section-title { margin-bottom: 1rem; }
+
+/* Ensure anchor sections are not hidden under fixed header when linking */
+:root {
+  --header-offset: 84px; /* adjust if your header height differs */
+}
+[id] { scroll-margin-top: var(--header-offset); }
+
+/* utility tweaks */
+.bg-light { background-color: #f8fafb; }
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+  .carousel-image { height: 260px; }
+  .carousel-caption { left: 6%; bottom: 12%; max-width: 86%; }
+  .hero-title { font-size: 1.25rem; }
+}
+
+/* FORCE: make the hero carousel full-width and ensure captions appear */
+#hero { position: relative; width: 100vw; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; z-index: 0; }
+#hero .carousel-image { height: 460px !important; min-height: 320px; background-size: cover !important; background-position: center center !important; }
+#hero .carousel-item { position: relative; }
+#hero .carousel-caption { position: absolute !important; left: 6% !important; right: auto !important; bottom: 18% !important; max-width: 58% !important; text-align: left !important; z-index: 3; }
+#hero .carousel-caption .hero-title { color: #fff !important; text-shadow: 0 4px 18px rgba(0,0,0,0.6) !important; }
+#hero .carousel-caption .hero-sub { color: rgba(255,255,255,0.92) !important; }
+
+/* ensure carousel controls are visible above other elements */
+#homeCarousel .carousel-control-prev-icon,
+#homeCarousel .carousel-control-next-icon { filter: none !important; }
+
+/* defensive: make sure home styles load above other rules */
+@media (min-width: 768px) {
+  .carousel-image { height: 520px !important; }
+}

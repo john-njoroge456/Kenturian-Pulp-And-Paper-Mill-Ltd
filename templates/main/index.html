@@ -3,36 +3,293 @@
 {% block title %}Home{% endblock %}
 
 {% block hero %}
-<div class="row align-items-center">
-  <div class="col-md-8">
-    <h1 class="hero-title mb-2">Sustainable paper solutions for industry and community</h1>
-    <p class="lead mb-0">We produce high-quality paper and packaging materials from recycled fibers — supporting circular economy and local jobs in Nairobi.</p>
+<div id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="6000">
+
+  <div class="carousel-indicators hero-indicators">
+    {% for g in gallery %}
+    <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="{{ forloop.counter0 }}"
+      class="{% if forloop.first %}active{% endif %}" aria-label="Slide {{ forloop.counter }}"></button>
+    {% endfor %}
   </div>
-  <div class="col-md-4 text-md-end mt-3 mt-md-0">
-    <a href="/contact/" class="btn btn-outline-gold">Contact</a>
-    <a href="/admin/" class="btn btn-outline-gold ms-2">Admin</a>
+
+  <div class="carousel-inner">
+    {% for g in gallery %}
+    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+      {% if g.image %}
+      <img src="{{ g.image.url }}" class="d-block w-100 hero-img {% cycle 'kb-zoom-in' 'kb-pan-right' 'kb-pan-left' %}" alt="{{ g.title }}">
+      {% endif %}
+      <div class="hero-overlay-home"></div>
+
+      <div class="hero-caption">
+        <div class="hero-caption-inner">
+          <span class="hero-accent-line"></span>
+          <h1 class="hero-title mb-2">{{ g.title|default:"Sustainable paper solutions for industry and community" }}</h1>
+          <p class="lead mb-3">{{ g.caption|default:"We produce high-quality paper and packaging materials from recycled fibers — supporting circular economy and local jobs in Nairobi." }}</p>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
   </div>
+
+  {% if gallery %}
+  <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev"><span class="carousel-control-prev-icon"></span></button>
+  <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next"><span class="carousel-control-next-icon"></span></button>
+  {% endif %}
 </div>
 {% endblock %}
 
 {% block content %}
-<div class="row">
-  <div class="col-md-8">
-    <h3 class="mb-3">News</h3>
+
+<!-- About Us -->
+<section class="section-block" id="who-we-are">
+  <div class="container">
+    <div class="row align-items-center mb-4" data-aos="fade-up">
+      <div class="col-md-6">
+        <span class="section-label"><span class="dot"></span> WHO WE ARE</span>
+        <h2 class="section-heading">About Us</h2>
+      </div>
+      <div class="col-md-5">
+        <p>Kenturian Pulp & Paper Mills Limited is a Kenyan paper manufacturing company committed to turning recovered paper resources into dependable, high-quality paper solutions. We combine responsible resource use, manufacturing expertise and a commitment to customer needs to create value for businesses and support a more sustainable paper industry.</p>
+      </div>
+      <div class="col-md-1 text-md-end">
+        <a href="/about/" class="arrow-btn">&#8599;</a>
+      </div>
+    </div>
+
+
+<div class="purpose-dream-card" data-aos="fade-up">
+  <div class="row">
+  <div class="col-md-5">
+    <h3><i class="bi bi-bullseye purpose-dream-icon"></i> Purpose</h3>
+    <p>Our purpose is to turn waste into value — delivering quality paper while reducing environmental impact.</p>
+  </div>
+  <div class="col-md-2 d-none d-md-flex justify-content-center">
+    <div class="vertical-divider"></div>
+  </div>
+  <div class="col-md-5">
+    <h3><i class="bi bi-star-fill purpose-dream-icon"></i> Dream</h3>
+    <p>To be recognised as a leading force in sustainable paper manufacturing in the region.</p>
+  </div>
+</div>
+
+  <div class="values-heading">
+    <span class="line"></span><span>Our Values</span><span class="line"></span>
+  </div>
+
+ 
+  <div class="row values-row">
+    <div class="col-6 col-md-3 text-center" data-aos="fade-up" data-aos-delay="0">
+      <div class="value-item">
+        <div class="value-icon">&#9679;</div>
+        <h4>Customer-Centric</h4>
+        <p>Our customers drive every decision we make.</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 text-center" data-aos="fade-up" data-aos-delay="100">
+      <div class="value-item">
+        <div class="value-icon">&#9670;</div>
+        <h4>Bold</h4>
+        <p>We tackle challenges with confidence and initiative.</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 text-center" data-aos="fade-up" data-aos-delay="200">
+      <div class="value-item">
+        <div class="value-icon">&#9733;</div>
+        <h4>Collaborative</h4>
+        <p>We work together with trust and respect.</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 text-center" data-aos="fade-up" data-aos-delay="300">
+      <div class="value-item">
+        <div class="value-icon">&#10003;</div>
+        <h4>Trustworthy</h4>
+        <p>Our reputation is built on reliability and integrity.</p>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- Our Business -->
+<section class="section-block" id="our-company">
+  <div class="container">
+    <div class="row align-items-center" data-aos="fade-up">
+      <div class="col-md-6">
+        <span class="section-label"><span class="dot"></span> OUR COMPANY</span>
+        <h2 class="section-heading section-heading-lg">Our Business</h2>
+      </div>
+      <div class="col-md-5">
+        <p>We manufacture a versatile range of paper products, including Kraft paper, Test Liner, Duplex Paper, Tissue and MG Cover Paper. Available in different colours, sizes and specifications, our products are developed to meet diverse packaging and industrial requirements while delivering consistent quality and reliable performance.</p>
+      </div>
+      <div class="col-md-1 text-md-end">
+        <a href="#productCarousel" class="arrow-btn">&#8599;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Product slideshow -->
+<section class="product-slideshow" data-aos="fade-up">
+<div id="productCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="7000">
+<div class="carousel-inner">
+      {% for p in products %}
+<div class="carousel-item {% if forloop.first %}active{% endif %}"
+     style="--slide-color: {{ p.theme_color|default:'#14335c' }};">
+        {% if p.image %}
+<img src="{{ p.image.url }}" alt="" class="product-float-img left" aria-hidden="true">
+<img src="{{ p.image.url }}" alt="" class="product-float-img right" aria-hidden="true">
+        {% endif %}
+<div class="container product-slide-content text-center py-5">
+<h2><a href="{% url 'main:product_detail' p.pk %}">{{ p.name }}</a></h2>
+<p>{{ p.description|truncatechars:300 }}</p>
+</div>
+</div>
+      {% empty %}
+<div class="carousel-item active" style="background-color: var(--brand-navy);">
+<div class="container text-center text-white py-5"><p>No products yet.</p></div>
+</div>
+      {% endfor %}
+</div>
+    {% if products %}
+<button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev"><span class="carousel-control-prev-icon"></span></button>
+<button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next"><span class="carousel-control-next-icon"></span></button>
+<div class="carousel-indicators product-dots">
+      {% for p in products %}
+<button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ forloop.counter0 }}"
+        class="{% if forloop.first %}active{% endif %}"
+        style="background-color: {{ p.theme_color|default:'#14335c' }};"
+        aria-label="{{ p.name }}"></button>
+      {% endfor %}
+</div>
+    {% endif %}
+</div>
+</section>
+
+<!-- How It Works -->
+<section class="section-block bg-light" id="our-process">
+  <div class="container">
+    <div class="text-center mb-5" data-aos="fade-up">
+      <span class="section-label justify-content-center"><span class="dot"></span> OUR PROCESS</span>
+      <h2 class="section-heading">How It Works</h2>
+    </div>
+    <div class="row text-center">
+      <div class="col-6 col-md-3 mb-4" data-aos="fade-up" data-aos-delay="0">
+        <div class="process-step">
+          <div class="process-num">01</div>
+          <h4>Collect</h4>
+          <p>Waste paper is sourced and sorted for recycling.</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="process-step">
+          <div class="process-num">02</div>
+          <h4>Pulp</h4>
+          <p>Sorted paper is broken down and processed into pulp.</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-4" data-aos="fade-up" data-aos-delay="200">
+        <div class="process-step">
+          <div class="process-num">03</div>
+          <h4>Roll</h4>
+          <p>Pulp is formed into manilla paper rolls of chosen color and size.</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-4" data-aos="fade-up" data-aos-delay="300">
+        <div class="process-step">
+          <div class="process-num">04</div>
+          <h4>Deliver</h4>
+          <p>Finished rolls are packed and delivered in bulk to clients.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Impact stats -->
+<section class="stats-strip" data-aos="fade-up">
+  <div class="container">
+    <div class="row text-center">
+      <div class="col-6 col-md-3">
+        <div class="stat-number" data-target="5000">0+</div>
+        <div class="stat-label">Tons Recycled</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-number" data-target="7">0+</div>
+        <div class="stat-label">Years in Operation</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-number" data-target="5">0+</div>
+        <div class="stat-label">Roll Sizes Available</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-number" data-target="200">0+</div>
+        <div class="stat-label">Clients Served</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const counters = document.querySelectorAll('.stat-number');
+  const speed = 1500; // total animation duration in ms
+
+  const animateCounter = (el) => {
+    const target = +el.getAttribute('data-target');
+    const startTime = performance.now();
+
+    const update = (now) => {
+      const progress = Math.min((now - startTime) / speed, 1);
+      const value = Math.floor(progress * target);
+      el.textContent = value.toLocaleString() + '+';
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      } else {
+        el.textContent = target.toLocaleString() + '+';
+      }
+    };
+    requestAnimationFrame(update);
+  };
+
+  const observer = new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        animateCounter(entry.target);
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  counters.forEach(counter => observer.observe(counter));
+});
+</script>
+
+<!-- News -->
+<section class="section-block">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-up">
+      <div>
+        <span class="section-label"><span class="dot"></span> LATEST UPDATES</span>
+        <h2 class="section-heading">News</h2>
+      </div>
+      <a href="{% url 'main:news_list' %}" class="arrow-btn">&#8599;</a>
+    </div>
     {% if news_list %}
       <div class="row">
         {% for n in news_list %}
-          <div class="col-12 mb-3">
-            <div class="card card-custom">
-              <div class="card-body">
-                <h5 class="card-title">{{ n.title }}</h5>
-                <p class="text-muted small">{{ n.published_at|date:"M d, Y" }}</p>
-                <p class="card-text">{{ n.excerpt|default:n.body|truncatechars:180 }}</p>
+          <div class="col-12 col-md-4 mb-4" data-aos="fade-up" data-aos-delay="{% widthratio forloop.counter0 1 150 %}">
+            <a href="{% url 'main:news_detail' n.slug %}" class="news-card {% if not n.featured_image %}news-card-noimage{% endif %}">
+              {% if n.featured_image %}
+              <div class="news-card-bg" style="background-image:url('{{ n.featured_image.url }}');"></div>
+              {% endif %}
+              <div class="news-card-overlay"></div>
+              <div class="news-card-content">
+                <div class="news-card-date">{{ n.published_at|date:"M d, Y" }}</div>
+                <h5 class="news-card-title">{{ n.title }}</h5>
+                <p class="news-card-excerpt mb-0">{{ n.excerpt|default:n.body|truncatechars:140 }}</p>
               </div>
-              <div class="card-footer bg-white border-0">
-                <a class="btn btn-sm btn-outline-primary disabled">Read</a>
-              </div>
-            </div>
+            </a>
           </div>
         {% endfor %}
       </div>
@@ -40,128 +297,14 @@
       <p class="text-muted">No news yet.</p>
     {% endif %}
   </div>
-
-  <div class="col-md-4">
-    <h3 class="mb-3">Products</h3>
-    {% if products %}
-      <ul class="list-group">
-        {% for p in products %}
-          <li class="list-group-item d-flex justify-content-between align-items-start">
-            <div>
-              <div class="fw-bold"><a href="{% url 'main:product_detail' p.pk %}">{{ p.name }}</a></div>
-              <small class="text-muted">{{ p.description|truncatechars:60 }}</small>
-            </div>
-            <span class="badge bg-light text-gold border">{{ p.price }}</span>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="text-muted">No products yet.</p>
-    {% endif %}
+</section>
+<!-- Request a Quote CTA -->
+<section class="quote-strip" data-aos="zoom-in">
+  <div class="container text-center">
+    <h2>Ready to Order?</h2>
+    <p>Tell us what you are looking for— we'll get back to you with a confirmation of your order.</p>
+    <a href="/order/" class="btn btn-quote">Place an Order</a>
   </div>
-</div>
+</section>
 
-<!-- Gallery -->
-<div class="row mt-4">
-  <div class="col-12">
-    <h3>Gallery</h3>
-  </div>
-  <div class="col-12">
-    <div class="d-flex flex-wrap gap-3">
-      {% for g in gallery %}
-        <button class="btn p-0 gallery-thumb" type="button" data-bs-toggle="modal" data-bs-target="#galleryModal" data-src="{{ g.image.url }}" data-title="{{ g.title }}" aria-label="Open {{ g.title }}">
-          {% if g.image %}
-            <img src="{{ g.image.url }}" alt="{{ g.title }}" style="width:100%; height:100%; object-fit:cover;">
-          {% else %}
-            <div class="d-flex align-items-center justify-content-center h-100 small text-muted">No image</div>
-          {% endif %}
-        </button>
-      {% endfor %}
-    </div>
-  </div>
-</div>
-
-<!-- Modal (single modal reused for all images) -->
-<div class="modal fade" id="galleryModal" tabindex="-1" aria-labelledby="galleryModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="galleryModalLabel"></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body text-center">
-        <img id="galleryModalImg" src="" alt="" style="max-width:100%; max-height:70vh; object-fit:contain;">
-      </div>
-      <div class="modal-footer d-flex justify-content-between">
-        <div class="me-auto">
-          <small id="galleryModalCaption" class="text-muted"></small>
-        </div>
-        <div>
-          <button type="button" class="btn btn-outline-secondary me-2" id="modalPrev" aria-label="Previous image">&larr;</button>
-          <button type="button" class="btn btn-outline-secondary" id="modalNext" aria-label="Next image">&rarr;</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  // Gather gallery buttons
-  const buttons = Array.from(document.querySelectorAll('.gallery-thumb'));
-  let current = -1;
-
-  function openModal(index) {
-    const btn = buttons[index];
-    const src = btn.dataset.src;
-    const title = btn.dataset.title || '';
-    const img = document.getElementById('galleryModalImg');
-    const label = document.getElementById('galleryModalLabel');
-    const caption = document.getElementById('galleryModalCaption');
-
-    img.src = src;
-    img.alt = title;
-    label.textContent = title;
-    caption.textContent = title;
-    current = index;
-  }
-
-  // attach click handlers
-  buttons.forEach((b, i) => {
-    b.addEventListener('click', () => openModal(i));
-  });
-
-  // prev/next
-  document.getElementById('modalPrev').addEventListener('click', () => {
-    if (current > 0) openModal(current - 1);
-  });
-  document.getElementById('modalNext').addEventListener('click', () => {
-    if (current < buttons.length - 1) openModal(current + 1);
-  });
-
-  // keyboard navigation when modal is shown
-  const modalEl = document.getElementById('galleryModal');
-  modalEl.addEventListener('shown.bs.modal', () => {
-    document.addEventListener('keydown', keyHandler);
-  });
-  modalEl.addEventListener('hidden.bs.modal', () => {
-    document.removeEventListener('keydown', keyHandler);
-  });
-
-  function keyHandler(e) {
-    if (e.key === 'ArrowLeft') {
-      if (current > 0) openModal(current - 1);
-    } else if (e.key === 'ArrowRight') {
-      if (current < buttons.length - 1) openModal(current + 1);
-    } else if (e.key === 'Escape') {
-      // Dismiss via Bootstrap
-      const modal = bootstrap.Modal.getInstance(modalEl);
-      modal.hide();
-    }
-  }
-});
-</script>
 {% endblock %}

@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block hero %}
+<section class="page-hero page-hero-careers" data-aos="fade-in"
+  {% if hero_image %}style="background-image: url('{{ hero_image.image.url }}');"{% endif %}>
+  <div class="hero-overlay"></div>
+  <div class="container text-center hero-content">
+    <h1 data-aos="fade-down" data-aos-delay="0">Careers</h1>
+    <p class="lead" data-aos="fade-up" data-aos-delay="150">Shaping the Future Together</p>
+    <p class="hero-intro">Every roll of paper we produce starts with people who care about doing the work right. Join a growing team making a real difference in Kenyan manufacturing.</p>
+  </div>
+  <a href="#why-join-us" class="scroll-cue"><i class="bi bi-chevron-down"></i></a>
+  <svg class="hero-wave" viewBox="0 0 1440 80" preserveAspectRatio="none">
+    <path fill="#ffffff" d="M0,32 C480,90 960,-10 1440,40 L1440,80 L0,80 Z"></path>
+  </svg>
+</section>
+{% endblock %}
+
+{% block content %}
+
+<!-- WHY JOIN US -->
+<section class="why-join-us py-5" id="why-join-us">
+  <div class="container">
+    <div class="section-label" data-aos="fade-up">
+      <span class="label-dot"></span> WHY JOIN US
+    </div>
+    <div class="purpose-dream-card" data-aos="fade-up" data-aos-delay="100">
+      <div class="row">
+        <div class="col-md-5">
+          <h3><i class="bi bi-people-fill purpose-dream-icon"></i> Company Culture</h3>
+          <p>
+            We foster a culture of continuous improvement, mutual respect, and
+            shared growth — built on strong values and a genuine commitment to
+            sustainability and the environment.
+          </p>
+        </div>
+        <div class="col-md-2 d-none d-md-flex justify-content-center">
+          <div class="vertical-divider"></div>
+        </div>
+        <div class="col-md-5">
+          <h3><i class="bi bi-graph-up-arrow purpose-dream-icon"></i> Learning &amp; Development</h3>
+          <p>
+            We invest in our people — giving you room to solve real problems,
+            grow your skills, and advance your career as the company grows.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VACANCIES -->
+<section class="vacancies-section py-5 bg-light" id="vacancies">
+  <div class="container">
+    <div class="text-center mb-4" data-aos="fade-up">
+      <i class="bi bi-briefcase-fill vacancies-icon"></i>
+      <h2>Vacancies</h2>
+      <p class="mx-auto">Find your place in a growing, purpose-driven team.</p>
+    </div>
+
+    {% if jobs %}
+      <div class="row g-4">
+        {% for job in jobs %}
+<div class="col-md-6" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:'100' }}">
+  <div class="job-card">
+    <h3>{{ job.title }}</h3>
+  <div class="job-meta">
+  {% if job.department %}<span><i class="bi bi-diagram-3"></i> {{ job.department }}</span>{% endif %}
+  {% if job.location %}<span><i class="bi bi-geo-alt"></i> {{ job.location }}</span>{% endif %}
+  {% if job.employment_type %}<span><i class="bi bi-clock"></i> {{ job.employment_type }}</span>{% endif %}
+  {% if job.qualification %}<span><i class="bi bi-mortarboard"></i> {{ job.get_qualification_display }}</span>{% endif %}
+</div>
+    <p>{{ job.description|truncatewords:35 }}</p>
+   <a href="{% url 'main:job_detail' job.pk %}" class="btn btn-arrow-circle btn-light-arrow">
+  View &amp; Apply <i class="bi bi-arrow-up-right"></i>
+</a>
+  </div>
+</div>
+{% endfor %}
+      </div>
+    {% else %}
+      <p class="text-center no-vacancies" data-aos="fade-up">
+        No open positions right now — check back soon, or send us your CV anyway.
+      </p>
+      <div class="text-center">
+        <a href="{% url 'main:contact' %}" class="btn btn-arrow-circle btn-light-arrow">
+  Get in touch <i class="bi bi-arrow-up-right"></i>
+</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+<!-- EMPLOYEE STORIES -->
+<section class="employee-stories py-5">
+  <div class="container">
+    <h2 class="text-center mb-5" data-aos="fade-up">Employee Stories</h2>
+
+    <div class="stories-viewport" data-aos="fade-up">
+      <div class="stories-track" id="storiesTrack">
+        <div class="story-slot" data-slot="0"><p class="story-slot-text"></p></div>
+        <div class="story-slot" data-slot="1"><p class="story-slot-text"></p></div>
+        <div class="story-slot story-slot-active" data-slot="2">
+          <span class="story-slot-quote-mark">&ldquo;</span>
+          <p class="story-slot-text"></p>
+          <div class="story-slot-tail"></div>
+        </div>
+        <div class="story-slot" data-slot="3"><p class="story-slot-text"></p></div>
+        <div class="story-slot" data-slot="4"><p class="story-slot-text"></p></div>
+      </div>
+    </div>
+
+    <div class="story-author text-center mt-4">
+      <div class="story-author-name" id="storyAuthorName"></div>
+      <div class="story-author-role" id="storyAuthorRole"></div>
+    </div>
+  </div>
+</section>
+
+{{ employee_stories_data|json_script:"employee-stories-data" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const dataEl = document.getElementById('employee-stories-data');
+  if (!dataEl) return;
+  const stories = JSON.parse(dataEl.textContent);
+  if (!stories.length) return;
+
+  const N = stories.length;
+  let baseIndex = 0;
+  const track = document.getElementById('storiesTrack');
+  const slots = Array.from(track.querySelectorAll('.story-slot'));
+  const nameEl = document.getElementById('storyAuthorName');
+  const roleEl = document.getElementById('storyAuthorRole');
+
+  const SLOT_WIDTH = 400;
+  const SLOT_GAP = 32;
+  const PITCH = SLOT_WIDTH + SLOT_GAP;
+
+  function mod(n, m) { return ((n % m) + m) % m; }
+  function isMobile() { return window.matchMedia('(max-width: 767px)').matches; }
+
+  function render() {
+    slots.forEach(function (slot, i) {
+      const storyIndex = mod(baseIndex - 2 + i, N);
+      slot.querySelector('.story-slot-text').textContent = stories[storyIndex].quote;
+    });
+    nameEl.textContent = stories[baseIndex].author_name;
+    roleEl.textContent = stories[baseIndex].author_role || '';
+  }
+
+  function next() {
+    if (isMobile()) { baseIndex = mod(baseIndex + 1, N); render(); return; }
+    track.style.transition = 'transform 0.5s cubic-bezier(0.4,0,0.2,1)';
+    track.style.transform = 'translateX(' + (-2 * PITCH) + 'px)';
+    setTimeout(function () {
+      baseIndex = mod(baseIndex + 1, N);
+      render();
+      track.style.transition = 'none';
+      track.style.transform = 'translateX(' + (-PITCH) + 'px)';
+      void track.offsetWidth;
+    }, 500);
+  }
+
+  function prev() {
+    if (isMobile()) { baseIndex = mod(baseIndex - 1, N); render(); return; }
+    track.style.transition = 'transform 0.5s cubic-bezier(0.4,0,0.2,1)';
+    track.style.transform = 'translateX(0px)';
+    setTimeout(function () {
+      baseIndex = mod(baseIndex - 1, N);
+      render();
+      track.style.transition = 'none';
+      track.style.transform = 'translateX(' + (-PITCH) + 'px)';
+      void track.offsetWidth;
+    }, 500);
+  }
+
+  slots[1].style.cursor = 'pointer';
+  slots[3].style.cursor = 'pointer';
+  slots[1].addEventListener('click', prev);
+  slots[3].addEventListener('click', next);
+
+  track.style.transform = 'translateX(' + (-PITCH) + 'px)';
+  render();
+  if (N > 1) setInterval(next, 4500);
+});
+</script>
+
+<!-- CTA -->
+<section class="careers-cta py-5 text-center" data-aos="fade-up">
+  <div class="container">
+    <h2>Don't see the right role yet?</h2>
+    <p>Send us your CV and we'll reach out when a matching opportunity opens up.</p>
+    <a href="{% url 'main:general_application' %}" class="btn btn-arrow-circle btn-light-arrow">
+  Send your CV <i class="bi bi-arrow-up-right"></i>
+</a>
+  </div>
+</section>
+
+{% endblock %}

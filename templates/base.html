@@ -14,46 +14,276 @@
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link href="{% static 'css/theme.css' %}" rel="stylesheet">
+
+<!-- Poppins font -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+<!-- Home page styles -->
+<link href="{% static 'css/home.css' %}" rel="stylesheet">
+  <!-- Poppins font -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+<!-- AOS scroll animations -->
+<link href="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+<!-- Footer overrides (loads after theme.css) -->
+
   <style>.site-logo { height:64px; width:auto; }</style>
+
 </head>
 <body>
   <nav class="navbar navbar-expand-lg navbar-custom fixed-top" role="navigation" aria-label="Main navigation">
-    <div class="container">
-      <a class="navbar-brand d-flex align-items-center" href="{% url 'main:index' %}">
-        <img src="{% static LOGO_STATIC %}" alt="{{ COMPANY_NAME }} logo" class="site-logo me-3" onerror="this.style.display='none'">
-        <div class="d-none d-lg-block">
-          <div class="site-title">KENTURIAN PULP &amp; PAPER MILLS LIMITED</div>
-          <div class="site-sub">Proudly recycled &middot; Nairobi, Kenya</div>
-        </div>
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navMain">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><a class="nav-link text-white" href="{% url 'main:index' %}">Home</a></li>
-          <li class="nav-item"><a class="nav-link text-white" href="{% url 'main:contact' %}">Contact</a></li>
-          <li class="nav-item"><a class="nav-link text-white" href="/admin/">Admin</a></li>
-        </ul>
+  <div class="container d-flex align-items-center justify-content-between">
+    <a class="navbar-brand d-flex align-items-center" href="{% url 'main:index' %}">
+      <img src="{% static LOGO_STATIC %}" alt="{{ COMPANY_NAME }} logo" class="site-logo me-3" onerror="this.style.display='none'">
+      <div class="d-none d-lg-block">
+        <div class="site-title">KENTURIAN PULP &amp; PAPER MILLS LIMITED</div>
+        <div class="site-sub">Quality Paper Manufacturers</div>
       </div>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse d-lg-flex justify-content-lg-between align-items-lg-center" id="navMain">
+   <ul class="navbar-nav mx-lg-auto align-items-lg-center">
+  <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'main:index' %}">Home</a></li>
+  <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" href="{% url 'main:about' %}">About Us</a></li>
+  
+  <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'careers' %}active{% endif %}" href="{% url 'main:careers' %}">Careers</a></li>
+  <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'news_list' %}active{% endif %}" href="{% url 'main:news_list' %}">News</a></li>
+</ul>
+      <div class="d-flex align-items-center gap-2 nav-actions">
+        {% comment %}
+        <button class="nav-search-toggle" type="button" aria-label="Search" onclick="document.getElementById('navSearchBox').classList.toggle('open')">
+          <i class="bi bi-search"></i>
+        </button>
+        {% endcomment %}
+        <a class="btn btn-order-pill" href="{% url 'main:order' %}">Order Now</a>
+        <a class="btn btn-contact-pill" href="{% url 'main:contact' %}">Contact Us</a>
+      </div>
+      {% comment %}
+      <div id="navSearchBox" class="nav-search-box">
+        <input type="text" placeholder="Search..." class="nav-search-input">
+      </div>
+      {% endcomment %}
     </div>
-  </nav>
+  </div>
+</nav>
   <header class="site-hero">
-    <div class="container">
-      <div class="hero-card">
-        {% block hero %}{% endblock %}
-      </div>
-    </div>
-  </header>
-  <main class="container my-5" role="main">
+  <div class="hero-card">
+    {% block hero %}{% endblock %}
+  </div>
+</header>
+  <main class="container mb-5" role="main">
     {% block content %}{% endblock %}
   </main>
-  <footer class="site-footer mt-auto" role="contentinfo">
-    <div class="container">
-      &copy; {{ now|date:"Y" }} {{ COMPANY_NAME }} &mdash; Contact: {{ COMPANY_EMAIL }}
+<!-- Footer  -->
+<footer class="site-footer" role="contentinfo" aria-label="Site footer">
+  <div class="footer-top">
+    <div class="footer-inner" data-aos="fade-up">
+
+      <!-- Name (left) + stats (right) on one row -->
+      <div class="footer-header-row">
+        <h2 class="footer-name mb-0">{{ COMPANY_NAME }}</h2>
+
+        <div class="footer-stats">
+  <div class="footer-stat">
+    <div class="footer-stat-number" data-target="5000">0+</div>
+    <div class="footer-stat-label">TONS RECYCLED</div>
+  </div>
+  <div class="footer-stat">
+    <div class="footer-stat-number" data-target="7">0+</div>
+    <div class="footer-stat-label">YEARS IN OPERATION</div>
+  </div>
+  <div class="footer-stat">
+    <div class="footer-stat-number" data-target="200">0+</div>
+    <div class="footer-stat-label">CLIENTS SERVED</div>
+  </div>
+</div>
+      </div>
+
+      <!-- White horizontal separator + subsections -->
+      <div class="footer-sections">
+        <div class="row gy-4">
+          <!-- Get in touch -->
+          <div class="col-12 col-md-3 footer-section footer-getin" data-aos="fade-up" data-aos-delay="0">
+            <h6 class="footer-section-title">Get in touch</h6>
+            <ul class="list-unstyled footer-contact-list mb-0">
+              <li><strong>Email:</strong>
+                {% if COMPANY_EMAIL %}<a class="footer-link" href="mailto:{{ COMPANY_EMAIL }}">{{ COMPANY_EMAIL }}</a>{% else %}—{% endif %}
+              </li>
+              <li><strong>WhatsApp:</strong>
+                {% if FOOTER_WHATSAPP %}<a class="footer-link" href="https://wa.me/{{ FOOTER_WHATSAPP }}" target="_blank" rel="noopener noreferrer">+{{ FOOTER_WHATSAPP }}</a>{% else %}—{% endif %}
+              </li>
+              <li><strong>Phone:</strong>
+                {% if COMPANY_PHONE %}<a class="footer-link" href="tel:{{ COMPANY_PHONE }}">{{ COMPANY_PHONE }}</a>{% else %}—{% endif %}
+              </li>
+             <li><strong>Location:</strong>
+  <div class="footer-address mt-2">{{ COMPANY_LOCATION }}</div>
+</li>
+
+            </ul>
+          </div>
+
+          <!-- Quick links -->
+        <div class="col-6 col-md-3 footer-section footer-links" data-aos="fade-up" data-aos-delay="100">
+  <h6 class="footer-section-title">Quick links</h6>
+  <ul class="list-unstyled footer-list mb-0">
+    <li><a class="footer-link" href="{% url 'main:index' %}">Home</a></li>
+    <li><a class="footer-link" href="{% url 'main:about' %}">About Us</a></li>
+    <li><a class="footer-link" href="{% url 'main:careers' %}">Careers</a></li>
+    <li><a class="footer-link" href="{% url 'main:contact' %}">Contact Us</a></li>
+  </ul>
+</div>
+
+          <!-- Explore -->
+  <div class="col-6 col-md-3 footer-section footer-business" data-aos="fade-up" data-aos-delay="200">
+  <h6 class="footer-section-title">Explore</h6>
+  <ul class="list-unstyled footer-list mb-0">
+    <li><a class="footer-link" href="{% url 'main:index' %}#who-we-are">Who We Are</a></li>
+    <li><a class="footer-link" href="{% url 'main:index' %}#our-company">Our Company</a></li>
+    <li><a class="footer-link" href="{% url 'main:index' %}#our-process">Our Process</a></li>
+    <li><a class="footer-link" href="{% url 'main:order' %}">Request a Quote</a></li>
+  </ul>
+</div>
+
+          <!-- Connect with us (icons only) -->
+         <div class="col-12 col-md-3 footer-section footer-connect" data-aos="fade-up" data-aos-delay="300">
+            <h6 class="footer-section-title">Connect with us</h6>
+            <div class="d-flex gap-2 social-row mb-3">
+              {% if FOOTER_SOCIALS.facebook %}<a class="social-btn" href="{{ FOOTER_SOCIALS.facebook }}" aria-label="Facebook" target="_blank" rel="noopener noreferrer">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.15 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.23.2 2.23.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.44 2.91h-2.34V22c4.78-.79 8.44-4.94 8.44-9.94Z"/>
+                </svg>
+              </a>{% endif %}
+              {% if FOOTER_SOCIALS.linkedin %}<a class="social-btn" href="{{ FOOTER_SOCIALS.linkedin }}" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer"><i class="bi bi-linkedin"></i></a>{% endif %}
+              {% if FOOTER_SOCIALS.twitter %}<a class="social-btn" href="{{ FOOTER_SOCIALS.twitter }}" aria-label="X (Twitter)" target="_blank" rel="noopener noreferrer"><i class="bi bi-twitter-x"></i></a>{% endif %}
+              {% if FOOTER_SOCIALS.instagram %}<a class="social-btn" href="{{ FOOTER_SOCIALS.instagram }}" aria-label="Instagram" target="_blank" rel="noopener noreferrer"><i class="bi bi-instagram"></i></a>{% endif %}
+            </div>
+            <p class="visually-hidden">Phone: {% if COMPANY_PHONE %}{{ COMPANY_PHONE }}{% endif %}</p>
+          </div>
+        </div>
+
+        <!-- Copyright / thin bottom bar -->
+        <div class="footer-bottom">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <div class="small copyright">&copy; {{ now|date:'Y' }} {{ COMPANY_NAME }}. All rights reserved.</div>
+            <div class="small footer-links">
+              <a class="footer-link me-3" href="{% url 'main:privacy' %}">Privacy</a>
+<a class="footer-link" href="{% url 'main:terms' %}">Terms</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
-  </footer>
+  </div>
+</footer>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-  {% block extra_scripts %}{% endblock %}
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.js"></script>
+  <script>
+    AOS.init({
+      duration: 800,
+      once: true,
+      offset: 80
+    });
+    
+  </script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const bubble = document.querySelector('.whatsapp-bubble');
+    const footer = document.querySelector('.site-footer');
+    if (bubble && footer) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            bubble.classList.add('above-footer');
+          } else {
+            bubble.classList.remove('above-footer');
+          }
+        });
+      }, { threshold: 0.05 });
+      observer.observe(footer);
+    }
+  });
+</script>
+
+<script>
+  window.addEventListener('scroll', function () {
+    const nav = document.querySelector('.navbar-custom');
+    if (window.scrollY > 50) {
+      nav.classList.add('scrolled');
+      document.body.classList.add('nav-scrolled');
+    } else {
+      nav.classList.remove('scrolled');
+      document.body.classList.remove('nav-scrolled');
+    }
+  });
+</script>
+  {% block extra_scripts %}
+<script>
+// Smooth-anchor scrolling for homepage anchors
+document.addEventListener('click', function(e){
+  var a = e.target.closest('a');
+  if(!a) return;
+  var href = a.getAttribute('href');
+  if(href && href.startsWith('#')){
+    var id = href.slice(1);
+    var el = document.getElementById(id);
+    if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth', block: 'start'}); }
+  }
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const footerCounters = document.querySelectorAll('.footer-stat-number');
+  const speed = 1500;
+
+  const animateFooterCounter = (el) => {
+    const target = +el.getAttribute('data-target');
+    const startTime = performance.now();
+
+    const update = (now) => {
+      const progress = Math.min((now - startTime) / speed, 1);
+      const value = Math.floor(progress * target);
+      el.textContent = value.toLocaleString() + '+';
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      } else {
+        el.textContent = target.toLocaleString() + '+';
+      }
+    };
+    requestAnimationFrame(update);
+  };
+
+  const footerObserver = new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        animateFooterCounter(entry.target);
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  footerCounters.forEach(counter => footerObserver.observe(counter));
+});
+</script>
+{% endblock %}
+  <!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+{% if FOOTER_WHATSAPP %}
+<a href="https://wa.me/{{ FOOTER_WHATSAPP }}" class="whatsapp-bubble" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
+  <span class="whatsapp-tooltip">Chat with us</span>
+  <i class="bi bi-whatsapp"></i>
+</a>
+{% endif %}
 </body>
 </html>

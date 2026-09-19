@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Order Received — {{ COMPANY_NAME }}{% endblock %}
+
+{% block hero %}
+<div class="page-hero-navy hero-success">
+  <div class="page-hero-navy-content">
+    <span class="hero-accent-line mx-auto"></span>
+    <h1 class="hero-title">Order Received</h1>
+    <p class="lead mb-0">Thanks — we've got your request.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="section-block section-block-tight-top success-page-bg">
+  <div class="application-form-wrap">
+    <div class="application-success-card text-center">
+      <div class="success-check">
+        <i class="bi bi-check-lg"></i>
+      </div>
+      <h3 class="mb-2">Order Request #{{ order.reference }} Received</h3>
+      <p class="mb-4" style="color:#555;">
+  Our team will review your request and get back to you at
+  <strong>{{ order.email }}</strong> or <strong>{{ order.phone }}</strong> shortly.
+  Quote this reference number for any follow-up.
+</p>
+<p class="mb-4" style="color:#888; font-size:0.9rem;">
+  <i class="bi bi-envelope-check me-1"></i> A copy of this order summary has been sent to {{ order.email }}.
+</p>
+
+      <div class="order-summary-confirmed mx-auto" style="max-width:520px;">
+        <span class="order-summary-badge">Confirmed</span>
+        <div class="job-key-details justify-content-center text-start">
+          <div class="key-detail"><i class="bi bi-box-seam"></i> {{ order.item_description }}</div>
+          <div class="key-detail"><i class="bi bi-rulers"></i> {{ order.length }} mm</div>
+          <div class="key-detail"><i class="bi bi-layers"></i> {{ order.gsm }} GSM</div>
+          <div class="key-detail"><i class="bi bi-hash"></i> {{ order.quantity }} kg</div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
+        <a href="{% url 'main:index' %}" class="btn btn-navy-arrow">
+          <i class="bi bi-arrow-left me-1"></i> Back to Home
+        </a>
+        <a href="{% url 'main:order' %}" class="btn btn-order-pill">
+          <i class="bi bi-plus-lg me-1"></i> Place Another Order
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

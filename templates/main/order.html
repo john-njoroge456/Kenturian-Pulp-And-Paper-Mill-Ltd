@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Place an Order — {{ COMPANY_NAME }}{% endblock %}
+
+{% block hero %}
+<div class="page-hero-navy {% if hero_image %}hero-bg-animated{% endif %}" {% if hero_image %}style="--hero-bg-url: url('{{ hero_image.image.url }}');"{% endif %}>
+  <div class="page-hero-navy-content">
+    <a class="hero-meta-link mb-3 d-inline-block" href="{% url 'main:index' %}" data-aos="fade-right" data-aos-delay="0"><i class="bi bi-arrow-left"></i> Home</a>
+    <span class="hero-accent-line mx-auto"></span>
+    <h1 class="hero-title" data-aos="fade-up" data-aos-delay="100">Start Your Order</h1>
+    <p class="lead mb-3" data-aos="fade-up" data-aos-delay="250">Tell us what you need — our team will review and follow up with a quote. This isn't a payment page, just a fast way to get your order moving.</p>
+    <div class="d-flex flex-wrap gap-2 justify-content-center" data-aos="fade-up" data-aos-delay="400">
+      <span class="hero-meta-link hero-badge"><i class="bi bi-lightning-charge-fill"></i> Fast Turnaround</span>
+      <span class="hero-meta-link hero-badge"><i class="bi bi-cash-coin"></i> No Payment Required</span>
+      <span class="hero-meta-link hero-badge"><i class="bi bi-headset"></i> Direct to Sales</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="section-block section-block-tight-top">
+  <div class="row g-4 align-items-start">
+
+    <!-- Order form -->
+    <div class="col-lg-7" data-aos="fade-right">
+      <div class="application-form-card">
+        <h3 class="contact-form-title mb-1">Order Details</h3>
+        <p class="contact-form-subtitle mb-4">Fields marked with an asterisk are required.</p>
+
+        <form method="post" enctype="multipart/form-data" class="application-form" id="orderForm">
+          {% csrf_token %}
+
+          <h6 class="footer-section-title" style="color:#14335c;">Product Specification</h6>
+
+          <label for="id_item_description"><i class="bi bi-box-seam"></i> Item Description *</label>
+          {{ form.item_description }}
+
+          <label for="id_color"><i class="bi bi-palette"></i> Color</label>
+          {{ form.color }}
+          <div id="colorOtherWrap" style="display:none; margin-top:0.6rem;">
+            {{ form.color_other }}
+          </div>
+
+          <div class="row">
+            <div class="col-6">
+              <label for="id_length"><i class="bi bi-rulers"></i> Length (mm) *</label>
+              {{ form.length }}
+            </div>
+            <div class="col-6">
+              <label for="id_gsm"><i class="bi bi-layers"></i> GSM *</label>
+              {{ form.gsm }}
+            </div>
+          </div>
+
+          <label for="id_quantity"><i class="bi bi-hash"></i> Quantity (kg) *</label>
+          {{ form.quantity }}
+
+          <hr class="my-4">
+          <h6 class="footer-section-title" style="color:#14335c;">Your Details</h6>
+
+          <div class="row">
+            <div class="col-md-6">
+              <label for="id_company_name"><i class="bi bi-building"></i> Company Name *</label>
+              {{ form.company_name }}
+            </div>
+            <div class="col-md-6">
+              <label for="id_contact_person"><i class="bi bi-person"></i> Contact Person *</label>
+              {{ form.contact_person }}
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <label for="id_phone"><i class="bi bi-telephone"></i> Phone *</label>
+              {{ form.phone }}
+            </div>
+            <div class="col-md-6">
+              <label for="id_email"><i class="bi bi-envelope"></i> Email *</label>
+              {{ form.email }}
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <label for="id_delivery_location"><i class="bi bi-geo-alt"></i> Delivery Location</label>
+              {{ form.delivery_location }}
+            </div>
+            <div class="col-md-6">
+              <label for="id_preferred_delivery_date"><i class="bi bi-calendar-event"></i> Preferred Delivery Date</label>
+              {{ form.preferred_delivery_date }}
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <label for="id_lpo_file"><i class="bi bi-paperclip"></i> Attach LPO (optional)</label>
+          {{ form.lpo_file }}
+
+          <label for="id_notes"><i class="bi bi-chat-left-text"></i> Additional Notes</label>
+          {{ form.notes }}
+
+          {% if form.errors %}
+            <p class="form-error-note">Please check the highlighted fields and try again.</p>
+          {% endif %}
+
+          <!-- Live recap strip, right before submit -->
+         <div class="job-key-details mt-4 mb-0" id="orderRecapStrip">
+  <h6 class="footer-section-title mb-2" style="color:#14335c; width:100%;">Order Summary</h6>
+  <div class="key-detail"><i class="bi bi-box-seam"></i> <span id="recapItem">Select an item</span></div>
+  <div class="key-detail"><i class="bi bi-palette"></i> <span id="recapColor">No color set</span></div>
+  <div class="key-detail"><i class="bi bi-rulers"></i> <span id="recapLength">Length —</span></div>
+  <div class="key-detail"><i class="bi bi-layers"></i> <span id="recapGsm">GSM —</span></div>
+  <div class="key-detail"><i class="bi bi-hash"></i> <span id="recapQty">Quantity —</span></div>
+  <div class="key-detail"><i class="bi bi-geo-alt"></i> <span id="recapDelivery">Delivery location —</span></div>
+  <div class="key-detail"><i class="bi bi-calendar-event"></i> <span id="recapDate">Delivery date —</span></div>
+</div>
+
+          <button type="submit" class="btn btn-navy-arrow contact-submit-btn w-100 mt-4">
+            Submit Order Request <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sidebar: what happens next -->
+    <div class="col-lg-5" data-aos="fade-left">
+      <div class="job-card">
+        <h5 class="mb-3" style="color:#14335c; font-weight:700;">What happens next</h5>
+        <div class="process-step mb-3">
+          <div class="process-num">1</div>
+          <h4 class="h6 mb-1">Submit</h4>
+          <p class="mb-0">Fill in your order parameters and send them our way — no payment needed yet.</p>
+        </div>
+        <div class="process-step mb-3">
+          <div class="process-num">2</div>
+          <h4 class="h6 mb-1">We review</h4>
+          <p class="mb-0">Our Productions team checks stock, usually within one business day.</p>
+        </div>
+        <div class="process-step mb-0">
+          <div class="process-num">3</div>
+          <h4 class="h6 mb-1">You get a quote</h4>
+          <p class="mb-0">We call or email you to confirm details and finalize the order.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var itemField = document.getElementById('id_item_description');
+  var colorField = document.getElementById('id_color');
+  var colorOtherField = document.getElementById('id_color_other');
+  var colorOtherWrap = document.getElementById('colorOtherWrap');
+  var lengthField = document.getElementById('id_length');
+  var gsmField = document.getElementById('id_gsm');
+  var qtyField = document.getElementById('id_quantity');
+   var deliveryField = document.getElementById('id_delivery_location');        // NEW
+  var dateField = document.getElementById('id_preferred_delivery_date'); 
+
+  var recapItem = document.getElementById('recapItem');
+  var recapColor = document.getElementById('recapColor');
+  var recapLength = document.getElementById('recapLength');
+  var recapGsm = document.getElementById('recapGsm');
+  var recapQty = document.getElementById('recapQty');
+  var recapDelivery = document.getElementById('recapDelivery');   // NEW
+  var recapDate = document.getElementById('recapDate');
+
+  function toggleColorOther() {
+    if (!colorField || !colorOtherWrap) return;
+    colorOtherWrap.style.display = colorField.value === 'Other' ? 'block' : 'none';
+  }
+
+  function updateRecap() {
+    if (itemField) {
+      var selected = itemField.options[itemField.selectedIndex];
+      recapItem.textContent = selected && selected.value ? selected.text : 'Select an item';
+    }
+    if (colorField) {
+      if (colorField.value === 'Other') {
+        recapColor.textContent = (colorOtherField && colorOtherField.value) ? colorOtherField.value : 'No color set';
+      } else {
+        recapColor.textContent = colorField.value ? colorField.value : 'No color set';
+      }
+    }
+    if (lengthField) recapLength.textContent = lengthField.value ? lengthField.value + ' mm' : 'Length —';
+    if (gsmField) recapGsm.textContent = gsmField.value ? gsmField.value + ' GSM' : 'GSM —';
+    if (qtyField) recapQty.textContent = qtyField.value ? qtyField.value + ' kg' : 'Quantity —';
+     if (deliveryField) recapDelivery.textContent = deliveryField.value ? deliveryField.value : 'Delivery location —';   // NEW
+    if (dateField) recapDate.textContent = dateField.value ? dateField.value : 'Delivery date —';                       // NEW
+  }
+
+  [itemField, colorField, colorOtherField, lengthField, gsmField, qtyField, deliveryField, dateField].forEach(function (el) {
+    if (el) el.addEventListener('input', updateRecap);
+    if (el) el.addEventListener('change', updateRecap);
+  });
+
+  if (colorField) colorField.addEventListener('change', toggleColorOther);
+
+  toggleColorOther();
+  updateRecap();
+});
+</script>
+{% endblock %}
