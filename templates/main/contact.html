@@ -1,40 +1,126 @@
 {% extends 'base.html' %}
 {% block title %}Contact — {{ COMPANY_NAME }}{% endblock %}
 
-{% block content %}
-<div class="row">
-  <div class="col-md-8">
-    <h2>Contact us</h2>
-    {% if sent %}
-      <div class="alert alert-success">Thanks — your message has been sent.</div>
-    {% else %}
-      <form method="post" novalidate>
-        {% csrf_token %}
-        {{ form.non_field_errors }}
-        <div class="mb-3">
-          {{ form.name.label_tag }} {{ form.name }}
-          {{ form.name.errors }}
-        </div>
-        <div class="mb-3">
-          {{ form.email.label_tag }} {{ form.email }}
-          {{ form.email.errors }}
-        </div>
-        <div class="mb-3">
-          {{ form.subject.label_tag }} {{ form.subject }}
-          {{ form.subject.errors }}
-        </div>
-        <div class="mb-3">
-          {{ form.message.label_tag }} {{ form.message }}
-          {{ form.message.errors }}
-        </div>
-        <button class="btn btn-primary" type="submit">Send</button>
-      </form>
-    {% endif %}
+{% block hero %}
+<div class="page-hero-navy hero-contact {% if hero_image %}hero-bg-animated{% endif %}"
+     {% if hero_image %}style="--hero-bg-url: url('{{ hero_image.image.url }}');"{% endif %}>
+  <div class="page-hero-navy-content">
+    <span class="hero-accent-line mx-auto"></span>
+    <h1 class="hero-title">Contact Us</h1>
+    <p class="lead lead-gold mb-0">We'd love to hear from you — reach out with any questions or requests.</p>
+    <div class="breadcrumb-text">
+      <a class="breadcrumb-link" href="{% url 'main:index' %}">Home</a> <span class="breadcrumb-current">/ Contact Us</span>
+    </div>
   </div>
-  <div class="col-md-4">
-    <h5>Our office</h5>
-    <p>{{ COMPANY_ADDRESS }}</p>
-    <p>Email: <a href="mailto:{{ COMPANY_EMAIL }}">{{ COMPANY_EMAIL }}</a></p>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="section-block section-block-tight-top">
+<div class="row g-4 align-items-stretch">
+
+    <!-- Left: form -->
+    <div class="col-lg-6">
+  <div class="application-form-card h-100" data-aos="fade-up">
+    <div class="section-label text-center mb-2">
+      <span class="label-dot"></span> GET IN TOUCH
+    </div>
+    <h3 class="text-center mb-4">Send us a message</h3>
+
+    {% if sent %}
+    <div class="application-success-card text-center" data-aos="zoom-in">
+      <div class="success-check">
+        <i class="bi bi-check-lg"></i>
+      </div>
+      <h3>Message Sent!</h3>
+      <p class="mb-0">Thanks for reaching out — we'll get back to you shortly.</p>
+    </div>
+    {% else %}
+    <form method="post" novalidate class="application-form">
+          {% csrf_token %}
+
+          <div>
+            <label for="{{ form.name.id_for_label }}"><i class="bi bi-person"></i> Full Name</label>
+            {{ form.name }}
+            {{ form.name.errors }}
+          </div>
+
+          <div>
+            <label for="{{ form.email.id_for_label }}"><i class="bi bi-envelope"></i> Email</label>
+            {{ form.email }}
+            {{ form.email.errors }}
+          </div>
+
+          <div>
+            <label for="{{ form.subject.id_for_label }}"><i class="bi bi-tag"></i> Subject</label>
+            {{ form.subject }}
+            {{ form.subject.errors }}
+          </div>
+
+          <div>
+            <label for="{{ form.message.id_for_label }}"><i class="bi bi-chat-left-text"></i> Message</label>
+            {{ form.message }}
+            {{ form.message.errors }}
+          </div>
+
+          {% if form.errors %}
+          <p class="form-error-note">Please check the fields above and try again.</p>
+          {% endif %}
+
+          <div class="text-center mt-4">
+            <button type="submit" class="btn btn-arrow-circle btn-navy-arrow">
+              Send message <i class="bi bi-arrow-up-right"></i>
+            </button>
+          </div>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right: Kenafric-style info panel + map -->
+  <div class="col-lg-6" data-aos="fade-up" data-aos-delay="150">
+  <div class="contact-right-col">
+        <div class="contact-info-card">
+          <h3 class="contact-info-title">Our Office</h3>
+
+          <ul class="list-unstyled contact-info-list mb-0">
+            <li class="contact-info-item">
+  <span class="contact-info-icon"><i class="bi bi-geo-alt-fill"></i></span>
+  <span>{{ COMPANY_LOCATION }}</span>
+</li>
+
+<li class="contact-info-item">
+  <span class="contact-info-icon"><i class="bi bi-mailbox"></i></span>
+  <span>{{ COMPANY_POSTAL_ADDRESS }}</span>
+</li>
+
+            {% if COMPANY_PHONE %}
+            <li class="contact-info-item">
+              <span class="contact-info-icon"><i class="bi bi-telephone-fill"></i></span>
+              <span><a href="tel:{{ COMPANY_PHONE }}">{{ COMPANY_PHONE }}</a></span>
+            </li>
+            {% endif %}
+
+            {% if FOOTER_WHATSAPP %}
+            <li class="contact-info-item">
+              <span class="contact-info-icon"><i class="bi bi-whatsapp"></i></span>
+              <span><a href="https://wa.me/{{ FOOTER_WHATSAPP }}" target="_blank" rel="noopener noreferrer">+{{ FOOTER_WHATSAPP }}</a></span>
+            </li>
+            {% endif %}
+
+            <li class="contact-info-item">
+              <span class="contact-info-icon"><i class="bi bi-envelope-fill"></i></span>
+              <span><a href="mailto:{{ COMPANY_EMAIL }}">{{ COMPANY_EMAIL }}</a></span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="contact-map-card mt-4">
+         <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.1358313877554!2d36.86249400966694!3d-1.6639966361467344!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182fb98ca5a8ae09%3A0x8b35c461b2e0947e!2sKenturian%20Pulp%20%26%20Paper%20Mills%20Ltd!5e0!3m2!1sen!2ske!4v1789391914176!5m2!1sen!2ske" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 {% endblock %}

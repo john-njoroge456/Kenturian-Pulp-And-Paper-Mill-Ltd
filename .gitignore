@@ -40,3 +40,7 @@ Thumbs.db
 # Docker / CI / local build artifacts
 docker-compose.override.yml
 .env.local
+db.sqlite3
+*.orig
+*~
+.ruff_cache/

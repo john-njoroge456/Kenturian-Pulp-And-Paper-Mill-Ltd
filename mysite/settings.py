@@ -4,11 +4,13 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'replace-this-with-a-secure-secret-in-production')
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY', 'replace-this-with-a-secure-secret-in-production')
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(
+    ',') if os.environ.get('ALLOWED_HOSTS') else []
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -67,14 +69,25 @@ else:
     }
 
 # Site/company defaults (can be edited later via a SiteSettings model or by changing these values)
-COMPANY_NAME = os.environ.get('COMPANY_NAME', 'Kenturian Pulp & Paper Mills Limited')
-COMPANY_EMAIL = os.environ.get('COMPANY_EMAIL', 'hq@kenturian.co.ke')
-COMPANY_ADDRESS = os.environ.get('COMPANY_ADDRESS', 'P.O.BOX: 39822 - 00623 Nairobi (Kenya). Head office: Plot No. Kajiado/Kaputiei-North/75261, Opposite Zennith Steel, Namanga Road, Isinya (Kenya)')
+COMPANY_NAME = os.environ.get(
+    'COMPANY_NAME', 'Kenturian Pulp & Paper Mills Limited')
+COMPANY_EMAIL = os.environ.get('COMPANY_EMAIL', 'kenturianpaper@gmail.com')
+COMPANY_LOCATION = os.environ.get(
+    'COMPANY_LOCATION', 'Off Namanga Road, Kisaju, Kajiado County, Kenya.')
+COMPANY_POSTAL_ADDRESS = os.environ.get(
+    'COMPANY_POSTAL_ADDRESS', 'P.O. Box 39822-00623, Nairobi, Kenya.')
 COMPANY_WEBSITE = os.environ.get('COMPANY_WEBSITE', 'kenturian.co.ke')
-LOGO_STATIC = os.environ.get('LOGO_STATIC', 'images/logo.svg')  # place your logo at static/images/logo.svg
+# place your logo at static/images/logo.svg
+LOGO_STATIC = os.environ.get('LOGO_STATIC', 'images/logo.svg')
+COMPANY_PHONE = os.environ.get('COMPANY_PHONE', '+254720044513')
+COMPANY_EMAIL = os.environ.get('COMPANY_EMAIL', 'kenturianpaper@gmail.com')
+
+# E.164 without the + for wa.me links
+FOOTER_WHATSAPP = os.environ.get('FOOTER_WHATSAPP', '254795979982')
 
 # Email
-EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_BACKEND = os.environ.get(
+    'EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 DEFAULT_FROM_EMAIL = COMPANY_EMAIL
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -110,3 +123,12 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+FOOTER_TWITTER = os.environ.get(
+    'FOOTER_TWITTER', 'https://twitter.com/kenturian')
+FOOTER_FACEBOOK = os.environ.get(
+    'FOOTER_FACEBOOK', 'https://facebook.com/kenturian')
+FOOTER_LINKEDIN = os.environ.get(
+    'FOOTER_LINKEDIN', 'https://linkedin.com/company/kenturian')
+FOOTER_YOUTUBE = os.environ.get('FOOTER_YOUTUBE', '')
+FOOTER_INSTAGRAM = os.environ.get(
+    'FOOTER_INSTAGRAM', 'https://instagram.com/kenturian')
