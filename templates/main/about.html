@@ -108,24 +108,54 @@ Today, we continue to build on that foundation by combining responsible resource
   </div>
 </section>
 <section class="leadership-section py-5">
-    <div class="container">
-        <div class="text-center mb-5" data-aos="fade-up">
-            <span class="section-label justify-content-center"><span class="dot"></span> OUR LEADERSHIP</span>
-            <h2 class="section-heading">Meet the Team Behind Kenturian</h2>
-        </div>
-        <div class="row justify-content-center g-4">
-            {% for member in leadership %}
-          <div class="col-md-5" data-aos="fade-up" data-aos-delay="{% if forloop.counter0 == 1 %}250{% else %}100{% endif %}">
-                <div class="leadership-card">
-                    <img src="{{ member.photo.url }}" alt="{{ member.name }}" class="leadership-photo">
-                    <h4 class="leadership-name">{{ member.name }}</h4>
-                    <p class="leadership-title">{{ member.title }}</p>
-                    <p class="leadership-bio">{{ member.bio }}</p>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
+  <div class="container">
+    <div class="text-center mb-5" data-aos="fade-up">
+      <span class="section-label justify-content-center"><span class="dot"></span> OUR DIRECTORS</span>
+      <h2 class="section-heading">Meet the Team Behind Kenturian</h2>
     </div>
+
+    <!-- Directors (large cards) -->
+    <div class="row justify-content-center g-4">
+      {% for member in leadership %}
+      <div class="col-md-5" data-aos="fade-up" data-aos-delay="{% if forloop.counter0 == 1 %}250{% else %}100{% endif %}">
+        <div class="leadership-card">
+          <img src="{{ member.photo.url }}" alt="{{ member.name }}" class="leadership-photo">
+          <h4 class="leadership-name">{{ member.name }}</h4>
+          {% if member.qualifications %}
+          <p class="leadership-qualifications"><i class="bi bi-mortarboard-fill"></i> {{ member.qualifications }}</p>
+          {% endif %}
+          <p class="leadership-title">{{ member.title }}</p>
+          {% if member.bio %}<p class="leadership-bio">{{ member.bio }}</p>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Management team (compact cards) -->
+    {% if team %}
+    <div class="team-subheading" data-aos="fade-up">
+      <span class="section-label"><span class="dot"></span> KEY ROLES</span>
+      <h3>Our Management Team</h3>
+    </div>
+    <div class="team-grid">
+      <div class="row justify-content-center g-4">
+        {% for member in team %}
+        <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="{% widthratio forloop.counter0 1 80 %}">
+          <div class="team-card">
+            <img src="{{ member.photo.url }}" alt="{{ member.name }}" class="team-photo">
+            <h4 class="team-name">{{ member.name }}</h4>
+            {% if member.qualifications %}
+            <p class="team-qualifications"><i class="bi bi-mortarboard-fill"></i> {{ member.qualifications }}</p>
+            {% endif %}
+            <p class="team-title">{{ member.title }}</p>
+            {% if member.bio %}<p class="team-bio">{{ member.bio }}</p>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
 </section>
 
 <!-- Values (light card variant) -->

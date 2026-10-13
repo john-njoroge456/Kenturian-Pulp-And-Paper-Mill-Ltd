@@ -32,30 +32,48 @@
         <form method="post" enctype="multipart/form-data" class="application-form" id="orderForm">
           {% csrf_token %}
 
+          {% if form.errors %}
+          <div class="alert alert-danger" role="alert" id="formErrorSummary">
+            <strong>We couldn't send your order yet.</strong> Please fix the following:
+            <ul class="mb-0 mt-2">
+              {% for field in form %}{% for error in field.errors %}
+              <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+              {% endfor %}{% endfor %}
+              {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
           <h6 class="footer-section-title" style="color:#14335c;">Product Specification</h6>
 
           <label for="id_item_description"><i class="bi bi-box-seam"></i> Item Description *</label>
           {{ form.item_description }}
+          {{ form.item_description.errors }}
 
-          <label for="id_color"><i class="bi bi-palette"></i> Color</label>
+          <label for="id_color"><i class="bi bi-palette"></i> Colour *</label>
           {{ form.color }}
+          {{ form.color.errors }}
           <div id="colorOtherWrap" style="display:none; margin-top:0.6rem;">
             {{ form.color_other }}
+            {{ form.color_other.errors }}
           </div>
 
           <div class="row">
             <div class="col-6">
               <label for="id_length"><i class="bi bi-rulers"></i> Length (mm) *</label>
               {{ form.length }}
+              {{ form.length.errors }}
             </div>
             <div class="col-6">
               <label for="id_gsm"><i class="bi bi-layers"></i> GSM *</label>
               {{ form.gsm }}
+              {{ form.gsm.errors }}
             </div>
           </div>
 
           <label for="id_quantity"><i class="bi bi-hash"></i> Quantity (kg) *</label>
           {{ form.quantity }}
+          {{ form.quantity.errors }}
 
           <hr class="my-4">
           <h6 class="footer-section-title" style="color:#14335c;">Your Details</h6>
@@ -64,10 +82,12 @@
             <div class="col-md-6">
               <label for="id_company_name"><i class="bi bi-building"></i> Company Name *</label>
               {{ form.company_name }}
+              {{ form.company_name.errors }}
             </div>
             <div class="col-md-6">
               <label for="id_contact_person"><i class="bi bi-person"></i> Contact Person *</label>
               {{ form.contact_person }}
+              {{ form.contact_person.errors }}
             </div>
           </div>
 
@@ -75,10 +95,12 @@
             <div class="col-md-6">
               <label for="id_phone"><i class="bi bi-telephone"></i> Phone *</label>
               {{ form.phone }}
+              {{ form.phone.errors }}
             </div>
             <div class="col-md-6">
               <label for="id_email"><i class="bi bi-envelope"></i> Email *</label>
               {{ form.email }}
+              {{ form.email.errors }}
             </div>
           </div>
 
@@ -86,36 +108,36 @@
             <div class="col-md-6">
               <label for="id_delivery_location"><i class="bi bi-geo-alt"></i> Delivery Location</label>
               {{ form.delivery_location }}
+              {{ form.delivery_location.errors }}
             </div>
             <div class="col-md-6">
               <label for="id_preferred_delivery_date"><i class="bi bi-calendar-event"></i> Preferred Delivery Date</label>
               {{ form.preferred_delivery_date }}
+              {{ form.preferred_delivery_date.errors }}
             </div>
           </div>
 
           <hr class="my-4">
 
-          <label for="id_lpo_file"><i class="bi bi-paperclip"></i> Attach LPO (optional)</label>
+          <label for="id_lpo_file"><i class="bi bi-paperclip"></i> Attach LPO (optional: PDF, JPG, PNG or Word, max 5 MB)</label>
           {{ form.lpo_file }}
+          {{ form.lpo_file.errors }}
 
           <label for="id_notes"><i class="bi bi-chat-left-text"></i> Additional Notes</label>
           {{ form.notes }}
-
-          {% if form.errors %}
-            <p class="form-error-note">Please check the highlighted fields and try again.</p>
-          {% endif %}
+          {{ form.notes.errors }}
 
           <!-- Live recap strip, right before submit -->
-         <div class="job-key-details mt-4 mb-0" id="orderRecapStrip">
-  <h6 class="footer-section-title mb-2" style="color:#14335c; width:100%;">Order Summary</h6>
-  <div class="key-detail"><i class="bi bi-box-seam"></i> <span id="recapItem">Select an item</span></div>
-  <div class="key-detail"><i class="bi bi-palette"></i> <span id="recapColor">No color set</span></div>
-  <div class="key-detail"><i class="bi bi-rulers"></i> <span id="recapLength">Length —</span></div>
-  <div class="key-detail"><i class="bi bi-layers"></i> <span id="recapGsm">GSM —</span></div>
-  <div class="key-detail"><i class="bi bi-hash"></i> <span id="recapQty">Quantity —</span></div>
-  <div class="key-detail"><i class="bi bi-geo-alt"></i> <span id="recapDelivery">Delivery location —</span></div>
-  <div class="key-detail"><i class="bi bi-calendar-event"></i> <span id="recapDate">Delivery date —</span></div>
-</div>
+          <div class="job-key-details mt-4 mb-0" id="orderRecapStrip">
+            <h6 class="footer-section-title mb-2" style="color:#14335c; width:100%;">Order Summary</h6>
+            <div class="key-detail"><i class="bi bi-box-seam"></i> <span id="recapItem">Select an item</span></div>
+            <div class="key-detail"><i class="bi bi-palette"></i> <span id="recapColor">No colour set</span></div>
+            <div class="key-detail"><i class="bi bi-rulers"></i> <span id="recapLength">Length —</span></div>
+            <div class="key-detail"><i class="bi bi-layers"></i> <span id="recapGsm">GSM —</span></div>
+            <div class="key-detail"><i class="bi bi-hash"></i> <span id="recapQty">Quantity —</span></div>
+            <div class="key-detail"><i class="bi bi-geo-alt"></i> <span id="recapDelivery">Delivery location —</span></div>
+            <div class="key-detail"><i class="bi bi-calendar-event"></i> <span id="recapDate">Delivery date —</span></div>
+          </div>
 
           <button type="submit" class="btn btn-navy-arrow contact-submit-btn w-100 mt-4">
             Submit Order Request <i class="bi bi-arrow-right ms-1"></i>
@@ -151,6 +173,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
+{{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var itemField = document.getElementById('id_item_description');
@@ -160,15 +183,15 @@ document.addEventListener('DOMContentLoaded', function () {
   var lengthField = document.getElementById('id_length');
   var gsmField = document.getElementById('id_gsm');
   var qtyField = document.getElementById('id_quantity');
-   var deliveryField = document.getElementById('id_delivery_location');        // NEW
-  var dateField = document.getElementById('id_preferred_delivery_date'); 
+  var deliveryField = document.getElementById('id_delivery_location');
+  var dateField = document.getElementById('id_preferred_delivery_date');
 
   var recapItem = document.getElementById('recapItem');
   var recapColor = document.getElementById('recapColor');
   var recapLength = document.getElementById('recapLength');
   var recapGsm = document.getElementById('recapGsm');
   var recapQty = document.getElementById('recapQty');
-  var recapDelivery = document.getElementById('recapDelivery');   // NEW
+  var recapDelivery = document.getElementById('recapDelivery');
   var recapDate = document.getElementById('recapDate');
 
   function toggleColorOther() {
@@ -183,16 +206,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (colorField) {
       if (colorField.value === 'Other') {
-        recapColor.textContent = (colorOtherField && colorOtherField.value) ? colorOtherField.value : 'No color set';
+        recapColor.textContent = (colorOtherField && colorOtherField.value) ? colorOtherField.value : 'No colour set';
       } else {
-        recapColor.textContent = colorField.value ? colorField.value : 'No color set';
+        recapColor.textContent = colorField.value ? colorField.value : 'No colour set';
       }
     }
     if (lengthField) recapLength.textContent = lengthField.value ? lengthField.value + ' mm' : 'Length —';
     if (gsmField) recapGsm.textContent = gsmField.value ? gsmField.value + ' GSM' : 'GSM —';
     if (qtyField) recapQty.textContent = qtyField.value ? qtyField.value + ' kg' : 'Quantity —';
-     if (deliveryField) recapDelivery.textContent = deliveryField.value ? deliveryField.value : 'Delivery location —';   // NEW
-    if (dateField) recapDate.textContent = dateField.value ? dateField.value : 'Delivery date —';                       // NEW
+    if (deliveryField) recapDelivery.textContent = deliveryField.value ? deliveryField.value : 'Delivery location —';
+    if (dateField) recapDate.textContent = dateField.value ? dateField.value : 'Delivery date —';
   }
 
   [itemField, colorField, colorOtherField, lengthField, gsmField, qtyField, deliveryField, dateField].forEach(function (el) {
@@ -202,8 +225,172 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (colorField) colorField.addEventListener('change', toggleColorOther);
 
+  // --- Colour rules (fixed colours and blocked colours come from forms.py) ---
+  if (itemField && colorField) {
+    var rules = [];
+    var blockedRules = [];
+    try { rules = JSON.parse(itemField.dataset.colorRules || '[]'); } catch (e) {}
+    try { blockedRules = JSON.parse(itemField.dataset.blockedColors || '[]'); } catch (e) {}
+
+    var colorNote = document.createElement('div');
+    colorNote.className = 'form-text';
+    colorField.insertAdjacentElement('afterend', colorNote);
+
+    var wasLocked = false;
+
+    function fixedColorFor(text) {
+      text = (text || '').toLowerCase();
+      for (var i = 0; i < rules.length; i++) {
+        if (text.indexOf(rules[i][0]) !== -1) return rules[i][1];
+      }
+      return null;
+    }
+
+    function blockedColorsFor(text) {
+      text = (text || '').toLowerCase();
+      var out = [];
+      blockedRules.forEach(function (r) {
+        if (text.indexOf(r[0]) !== -1) out = out.concat(r[1]);
+      });
+      return out;
+    }
+
+    function applyColorRule(initial) {
+      var opt = itemField.options[itemField.selectedIndex];
+      var label = opt ? opt.text : '';
+      var fixed = fixedColorFor(label);
+      var blocked = blockedColorsFor(label);
+
+      // Hide colours this item is never made in
+      Array.prototype.forEach.call(colorField.options, function (o) {
+        var hide = blocked.indexOf(o.value) !== -1;
+        o.hidden = hide;
+        o.disabled = hide;
+      });
+
+      if (fixed) {
+        colorField.value = fixed;
+        colorField.disabled = true;
+        colorNote.textContent = label + ' is always supplied in ' + fixed + ', so the colour is set for you.';
+        wasLocked = true;
+      } else {
+        colorField.disabled = false;
+        colorNote.textContent = blocked.length ? label + ' is not available in ' + blocked.join(', ') + '.' : '';
+        if ((wasLocked && !initial) || blocked.indexOf(colorField.value) !== -1) colorField.value = '';
+        wasLocked = false;
+      }
+      colorField.dispatchEvent(new Event('change'));
+    }
+
+    itemField.addEventListener('change', function () { applyColorRule(false); });
+    applyColorRule(true);
+  }
+
+  // --- Phone: only allow digits and phone punctuation while typing ---
+  var phone = document.getElementById('id_phone');
+  if (phone) {
+    phone.addEventListener('input', function () {
+      var cleaned = phone.value.replace(/[^0-9+\s\-().]/g, '');
+      if (cleaned !== phone.value) phone.value = cleaned;
+    });
+  }
+
+  // --- Notes: live character counter ---
+  var notes = document.getElementById('id_notes');
+  if (notes) {
+    var notesMax = notes.maxLength > 0 ? notes.maxLength : 1000;
+    var notesCount = document.createElement('div');
+    notesCount.className = 'form-text text-end';
+    notes.insertAdjacentElement('afterend', notesCount);
+    function updateNotesCount() { notesCount.textContent = notes.value.length + ' / ' + notesMax; }
+    notes.addEventListener('input', updateNotesCount);
+    updateNotesCount();
+  }
+
+  // --- Check the attachment as soon as it is chosen ---
+  var lpo = document.getElementById('id_lpo_file');
+  if (lpo) {
+    var fileMsg = document.createElement('div');
+    fileMsg.className = 'text-danger small mt-1';
+    fileMsg.setAttribute('role', 'alert');
+    lpo.insertAdjacentElement('afterend', fileMsg);
+
+    lpo.addEventListener('change', function () {
+      var f = lpo.files[0];
+      fileMsg.textContent = '';
+      if (!f) return;
+      var ext = f.name.split('.').pop().toLowerCase();
+      var allowed = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+      if (allowed.indexOf(ext) === -1) {
+        fileMsg.textContent = "'" + f.name + "' is not an accepted file type. Please upload a PDF, JPG, PNG or Word file.";
+        lpo.value = '';
+      } else if (f.size > 5 * 1024 * 1024) {
+        fileMsg.textContent = "'" + f.name + "' is " + (f.size / 1048576).toFixed(1) + ' MB. The maximum is 5 MB, so please compress it or upload a smaller file.';
+        lpo.value = '';
+      }
+    });
+  }
+  // --- Show clear inline messages instead of the browser's brief tooltip ---
+  var orderForm = document.getElementById('orderForm');
+  if (orderForm) {
+    var focusedFirst = false;
+
+    function clearFieldError(el) {
+      el.classList.remove('is-invalid');
+      var next = el.nextElementSibling;
+      while (next) {
+        if (next.classList && next.classList.contains('client-error')) { next.remove(); break; }
+        next = next.nextElementSibling;
+      }
+    }
+
+    function messageFor(el) {
+      var v = el.validity;
+      if (v.valueMissing) {
+        var lab = document.querySelector('label[for="' + el.id + '"]');
+        var name = lab ? lab.textContent.replace('*', '').trim() : 'this field';
+        return "Please fill in '" + name + "'.";
+      }
+      if (v.rangeUnderflow || v.rangeOverflow) return el.dataset.rangeMessage || el.validationMessage;
+      if (v.stepMismatch) {
+        return el.id === 'id_length'
+          ? 'Enter the length with at most 2 decimal places, e.g. 1500.50.'
+          : 'Enter a whole number without decimals, e.g. 80.';
+      }
+      if (v.badInput) return 'Please enter a valid number.';
+      if (v.typeMismatch && el.type === 'email') return 'Enter a valid email address, e.g. name@company.co.ke.';
+      return el.validationMessage;
+    }
+
+    orderForm.addEventListener('invalid', function (e) {
+      e.preventDefault();                       // hide the browser's own tooltip
+      var el = e.target;
+      clearFieldError(el);
+      el.classList.add('is-invalid');
+      var msg = document.createElement('div');
+      msg.className = 'client-error';
+      msg.setAttribute('role', 'alert');
+      msg.textContent = messageFor(el);
+      el.insertAdjacentElement('afterend', msg);
+      if (!focusedFirst) {
+        focusedFirst = true;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus({ preventScroll: true });
+      }
+    }, true);
+
+    orderForm.addEventListener('input', function (e) { clearFieldError(e.target); });
+    orderForm.addEventListener('change', function (e) { clearFieldError(e.target); });
+
+    var submitBtn = orderForm.querySelector('[type="submit"]');
+    if (submitBtn) submitBtn.addEventListener('click', function () { focusedFirst = false; });
+  }
   toggleColorOther();
   updateRecap();
+
+  // --- Bring the error summary into view ---
+  var summary = document.getElementById('formErrorSummary');
+  if (summary) summary.scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
 </script>
 {% endblock %}

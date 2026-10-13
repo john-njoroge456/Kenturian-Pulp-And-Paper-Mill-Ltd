@@ -120,8 +120,10 @@ class NewsArticleAdmin(admin.ModelAdmin):
 
 @admin.register(LeadershipMember)
 class LeadershipMemberAdmin(admin.ModelAdmin):
-    list_display = ('name', 'title', 'order')
-    list_editable = ('order',)
+    list_display = ('name', 'title', 'is_featured', 'order')
+    list_editable = ('is_featured', 'order')
+    list_filter = ('is_featured',)
+    ordering = ('-is_featured', 'order')
 
 
 @admin.register(ContactMessage)

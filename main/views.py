@@ -3,11 +3,12 @@ from django.urls import reverse
 from django.conf import settings
 from django.core.mail import send_mail, EmailMessage
 from django.utils.text import Truncator
+from django.core.paginator import Paginator
 from .models import OrderRequest
 from .forms import OrderRequestForm
 
 from .forms import ContactForm, JobApplicationForm
-from django.core.paginator import Paginator
+
 from .models import (
     Product, NewsArticle, NewsCategory, NewsTag, GalleryImage,
     JobPosting, EmployeeStory, LeadershipMember, ContactMessage, JobApplication
@@ -76,11 +77,13 @@ def order_success_view(request, reference):
 def about_view(request):
     hero_image = GalleryImage.objects.filter(category='about_hero').first()
     story_image = GalleryImage.objects.filter(category='about_story').first()
-    leadership = LeadershipMember.objects.all()
+    leadership = LeadershipMember.objects.filter(is_featured=True)
+    team = LeadershipMember.objects.filter(is_featured=False)
     return render(request, 'main/about.html', {
         'hero_image': hero_image,
         'story_image': story_image,
         'leadership': leadership,
+        'team': team,
     })
 
 

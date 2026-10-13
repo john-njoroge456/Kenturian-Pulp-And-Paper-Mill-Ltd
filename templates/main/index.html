@@ -43,13 +43,21 @@
 <!-- About Us -->
 <section class="section-block" id="who-we-are">
   <div class="container">
-    <div class="row align-items-center mb-4" data-aos="fade-up">
-      <div class="col-md-6">
+    <div class="row align-items-center mb-5" data-aos="fade-up">
+      <div class="col-md-4">
         <span class="section-label"><span class="dot"></span> WHO WE ARE</span>
         <h2 class="section-heading">About Us</h2>
       </div>
-      <div class="col-md-5">
-        <p>Kenturian Pulp & Paper Mills Limited is a Kenyan paper manufacturing company committed to turning recovered paper resources into dependable, high-quality paper solutions. We combine responsible resource use, manufacturing expertise and a commitment to customer needs to create value for businesses and support a more sustainable paper industry.</p>
+      <div class="col-md-7">
+        <p>At <strong>Kenturian Pulp &amp; Paper Mills Limited</strong>, we believe paper manufacturing is 
+          about more than production — it is about creating dependable solutions from valuable resources.
+
+Based in Kenya, we combine manufacturing expertise, 
+responsible resource use and a commitment to quality to produce paper
+products that meet the evolving needs of our customers. 
+As we continue to grow our capabilities 
+and expand our product range, our focus remains simple:
+<strong> quality, reliability and sustainable value for the businesses we serve</strong>.</p>
       </div>
       <div class="col-md-1 text-md-end">
         <a href="/about/" class="arrow-btn">&#8599;</a>
@@ -115,12 +123,17 @@
 <section class="section-block" id="our-company">
   <div class="container">
     <div class="row align-items-center" data-aos="fade-up">
-      <div class="col-md-6">
+      <div class="col-md-4">
         <span class="section-label"><span class="dot"></span> OUR COMPANY</span>
         <h2 class="section-heading section-heading-lg">Our Business</h2>
       </div>
-      <div class="col-md-5">
-        <p>We manufacture a versatile range of paper products, including Kraft paper, Test Liner, Duplex Paper, Tissue and MG Cover Paper. Available in different colours, sizes and specifications, our products are developed to meet diverse packaging and industrial requirements while delivering consistent quality and reliable performance.</p>
+      <div class="col-md-7">
+        <p>We manufacture a versatile range of paper products designed to meet diverse packaging, 
+          industrial and converting requirements. Our product range includes 
+          <strong>Tissue Paper, MG Cover Paper, Test Liner Paper, Fluting Paper, Duplex Paper and Cheap Board Paper.</strong>
+
+Available in a range of grades, colours, sizes and specifications, our products are manufactured with a focus on consistent
+ quality, reliable performance and the practical needs of our customers.</p>
       </div>
       <div class="col-md-1 text-md-end">
         <a href="#productCarousel" class="arrow-btn">&#8599;</a>
@@ -135,6 +148,7 @@
 <div class="carousel-inner">
       {% for p in products %}
 <div class="carousel-item {% if forloop.first %}active{% endif %}"
+      data-bs-interval="{{ p.read_time_ms }}"
      style="--slide-color: {{ p.theme_color|default:'#14335c' }};">
         {% if p.image %}
 <img src="{{ p.image.url }}" alt="" class="product-float-img left" aria-hidden="true">
@@ -211,19 +225,19 @@
   <div class="container">
     <div class="row text-center">
       <div class="col-6 col-md-3">
-        <div class="stat-number" data-target="5000">0+</div>
+        <div class="stat-number" data-target="5000">5,000+</div>
         <div class="stat-label">Tons Recycled</div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="stat-number" data-target="7">0+</div>
+        <div class="stat-number" data-target="7">7+</div>
         <div class="stat-label">Years in Operation</div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="stat-number" data-target="5">0+</div>
+        <div class="stat-number" data-target="5">5+</div>
         <div class="stat-label">Roll Sizes Available</div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="stat-number" data-target="200">0+</div>
+        <div class="stat-number" data-target="200">200+</div>
         <div class="stat-label">Clients Served</div>
       </div>
     </div>
@@ -261,7 +275,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }, { threshold: 0.5 });
 
-  counters.forEach(counter => observer.observe(counter));
+  counters.forEach(counter => {
+  counter.textContent = '0+';
+  observer.observe(counter);
+});
 });
 </script>
 

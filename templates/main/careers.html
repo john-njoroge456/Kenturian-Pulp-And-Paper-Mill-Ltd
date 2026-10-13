@@ -92,6 +92,7 @@
   </div>
 </section>
 <!-- EMPLOYEE STORIES -->
+{% if employee_stories_data %}
 <section class="employee-stories py-5">
   <div class="container">
     <h2 class="text-center mb-5" data-aos="fade-up">Employee Stories</h2>
@@ -114,8 +115,26 @@
       <div class="story-author-name" id="storyAuthorName"></div>
       <div class="story-author-role" id="storyAuthorRole"></div>
     </div>
+
+    <!-- Shown only when JavaScript is off -->
+    <div class="stories-fallback">
+      <div class="row g-4 justify-content-center">
+        {% for story in employee_stories_data %}
+        <div class="col-md-6 col-lg-4">
+          <figure class="story-card">
+            <blockquote>{{ story.quote }}</blockquote>
+            <figcaption>
+              <strong>{{ story.author_name }}</strong>
+              {% if story.author_role %}<span>{{ story.author_role }}</span>{% endif %}
+            </figcaption>
+          </figure>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
   </div>
 </section>
+{% endif %}
 
 {{ employee_stories_data|json_script:"employee-stories-data" }}
 
@@ -175,14 +194,55 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 500);
   }
 
+  // --- Auto-advance: reading time based on quote length, pause on hover ---
+  let timer = null;
+  let paused = false;
+  let moving = false;
+
+  function readDelay() {
+    const words = stories[baseIndex].quote.trim().split(/\s+/).length;
+    // 2s base + 0.25s per word, never under 6s or over 20s
+    return Math.min(Math.max(2000 + words * 250, 6000), 20000);
+  }
+
+  function schedule() {
+    clearTimeout(timer);
+    if (N < 2 || paused) return;
+    timer = setTimeout(function () { go(next); }, readDelay());
+  }
+
+  function go(move) {
+    if (moving) return;
+    moving = true;
+    clearTimeout(timer);
+    move();
+    setTimeout(function () {
+      moving = false;
+      schedule();
+    }, isMobile() ? 0 : 550);
+  }
+
   slots[1].style.cursor = 'pointer';
   slots[3].style.cursor = 'pointer';
-  slots[1].addEventListener('click', prev);
-  slots[3].addEventListener('click', next);
+  slots[1].addEventListener('click', function () { go(prev); });
+  slots[3].addEventListener('click', function () { go(next); });
+
+  // Pause while the pointer is over the stories (mouse devices only)
+  if (window.matchMedia('(hover: hover)').matches) {
+    const area = document.querySelector('.employee-stories .container');
+    area.addEventListener('mouseenter', function () {
+      paused = true;
+      clearTimeout(timer);
+    });
+    area.addEventListener('mouseleave', function () {
+      paused = false;
+      if (!moving) schedule();
+    });
+  }
 
   track.style.transform = 'translateX(' + (-PITCH) + 'px)';
   render();
-  if (N > 1) setInterval(next, 4500);
+  schedule();
 });
 </script>
 

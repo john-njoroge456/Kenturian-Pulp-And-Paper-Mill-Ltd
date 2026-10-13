@@ -100,6 +100,13 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def read_time_ms(self):
+        # Match the template's truncatechars:300 so timing reflects what's shown
+        words = len((self.description or "")[:300].split())
+        seconds = min(max(3 + words * 0.25, 6), 15)
+        return int(seconds * 1000)
+
 
 class NewsCategory(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -256,13 +263,24 @@ class LeadershipMember(models.Model):
     name = models.CharField(max_length=100)
     # e.g. "Chairman and Managing Director"
     title = models.CharField(max_length=100)
+    qualifications = models.CharField(
+        max_length=200, blank=True,
+        help_text="e.g. M.Tech (Pulp and Paper), MBA - Administration"
+    )
     bio = models.TextField(max_length=500, blank=True)
     photo = models.ImageField(upload_to='leadership/')
+    is_featured = models.BooleanField(
+        default=False,
+        help_text="Tick for directors shown as large cards. Leave unticked for the management team row."
+    )
     order = models.PositiveIntegerField(
-        default=0, help_text="Lower numbers appear first")
+        default=100,
+        verbose_name="Rank",
+        help_text="Lower numbers appear first. Use steps of 10 (10, 20, 30) so you can slot someone in later."
+    )
 
     class Meta:
-        ordering = ['order']
+        ordering = ['order', 'id']
 
     def __str__(self):
         return f"{self.name} ({self.title})"

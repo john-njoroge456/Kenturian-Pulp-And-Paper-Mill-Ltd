@@ -2328,3 +2328,203 @@ main.container.mb-5 {
   font-size: 0.9rem;
   animation-delay: 0.8s;   /* after the intro paragraph (0.6s) */
 }
+/* Homepage intro sections: About Us + Our Business */
+#who-we-are,
+#our-company {
+  padding: 3.25rem 0;
+}
+#our-company {
+  padding-top: 0.5rem; /* About Us's bottom padding already gives the gap above */
+}
+#who-we-are .col-md-7 > p,
+#our-company .col-md-7 > p {
+  font-size: 1rem;
+  line-height: 1.7;
+  margin-bottom: 0;
+}
+.site-hero:has(#heroCarousel) {
+  padding-bottom: 0;
+}
+
+/* Product slideshow: stacked layout on tablets/phones so text never overlaps images */
+@media (max-width: 991px) {
+  .product-slideshow .carousel-item {
+    height: auto;
+    min-height: 520px;
+    max-height: none;
+  }
+  .product-slide-content {
+    position: relative;
+    inset: auto;
+    max-width: 100%;
+    /* py-5 on the element uses !important, so override it the same way */
+    padding-top: 2.5rem !important;
+    padding-bottom: 14rem !important; /* reserved band for the images */
+  }
+  .product-slide-content h2 {
+    font-size: 1.6rem;
+  }
+  .product-slide-content p {
+    font-size: 0.95rem;
+    line-height: 1.55;
+    max-width: 100%;
+  }
+  .product-float-img {
+    height: 210px;
+    width: 36%;
+    max-width: none;
+    bottom: -10px;
+  }
+  .product-float-img.left { left: -4%; }
+  .product-float-img.right { right: -4%; }
+
+  /* arrows: smaller, moved into the image band instead of over the text */
+  .product-slideshow .carousel-control-prev,
+  .product-slideshow .carousel-control-next {
+    width: 40px;
+    height: 40px;
+    top: auto;
+    bottom: 90px;
+    transform: none;
+  }
+  .product-slideshow .carousel-control-prev { left: 12px; }
+  .product-slideshow .carousel-control-next { right: 12px; }
+  .product-slideshow .carousel-control-prev:hover,
+  .product-slideshow .carousel-control-next:hover {
+    transform: scale(1.08);
+  }
+}
+body {
+  overflow-x: hidden;
+}
+@media (min-width: 768px) {
+  .footer-header-row {
+    padding-right: 56px; /* keeps the stats clear of the WhatsApp bubble */
+  }
+}
+#our-process {
+  padding: 3.25rem 0;
+}
+.footer-logo { height: 56px; width: auto; }
+
+@media (max-width: 767px) {
+  .footer-brand { width: 100%; justify-content: center; }
+  .footer-brand .footer-name { width: auto; }
+}
+.social-btn[aria-disabled="true"] { cursor: default; }
+.social-btn[aria-disabled="true"]:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: none;
+}
+/* ===== Management team + qualifications ===== */
+.team-subheading {
+  text-align: center;
+  max-width: 1040px;
+  margin: 3.5rem auto 1.75rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid #e3e7ee;
+}
+.team-subheading h3 { color: #14335c; font-weight: 700; font-size: 1.5rem; margin: 0.25rem 0 0; }
+.team-grid { max-width: 1040px; margin: 0 auto; }
+.team-card {
+  text-align: center;
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.5rem 1.1rem;
+  height: 100%;
+  box-shadow: 0 4px 16px rgba(20, 51, 92, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.team-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(20, 51, 92, 0.14); }
+.team-photo {
+  width: 120px; height: 120px;
+  object-fit: cover; object-position: center top;
+  border-radius: 50%;
+  border: 3px solid var(--brand-gold);
+  margin-bottom: 1rem;
+}
+.team-name { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 1.05rem; color: #14335c; margin-bottom: 0.2rem; }
+.team-title { color: var(--brand-gold-dark); font-weight: 700; font-size: 0.9rem; margin: 0 0 0.6rem; }
+.team-bio { font-size: 0.85rem; line-height: 1.55; color: #555; margin: 0; }
+
+.leadership-qualifications,
+.team-qualifications {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  background: rgba(20, 51, 92, 0.07);
+  color: #14335c;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  border-radius: 12px;
+  padding: 0.3rem 0.8rem;
+  margin: 0.4rem 0 0.5rem;
+}
+.leadership-qualifications { font-size: 0.95rem; }
+.team-qualifications { font-size: 0.82rem; }
+.leadership-qualifications i,
+.team-qualifications i { color: var(--brand-gold-dark); margin-top: 0.15em; }
+/* No-JS fallback: show everything that AOS would otherwise keep hidden */
+html:not(.js) [data-aos] {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  pointer-events: auto !important;
+}
+
+/* No-JS: the mobile menu can't open without Bootstrap's JS, so show it */
+html:not(.js) .navbar-toggler {
+  display: none;
+}
+@media (max-width: 991.98px) {
+  html:not(.js) .navbar-collapse.collapse:not(.show) {
+    display: block;
+  }
+}
+/* No-JS: carousel arrows and dots can't work, so hide them */
+html:not(.js) .carousel-control-prev,
+html:not(.js) .carousel-control-next,
+html:not(.js) .carousel-indicators {
+  display: none;
+}
+/* Employee stories: plain-card fallback when JS is off */
+.stories-fallback { display: none; }
+html:not(.js) .stories-fallback { display: block; }
+html:not(.js) .stories-viewport,
+html:not(.js) .story-author { display: none; }
+
+.story-card {
+  margin: 0;
+  height: 100%;
+  background: var(--brand-blue);
+  color: #fff;
+  border-radius: 20px;
+  padding: 1.75rem;
+}
+.story-card blockquote {
+  margin: 0 0 1.25rem;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+.story-card blockquote::before {
+  content: "\201C";
+  display: block;
+  font-family: Georgia, serif;
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--brand-gold);
+}
+.story-card figcaption strong { display: block; font-size: 1.05rem; }
+.story-card figcaption span { display: block; font-size: 0.9rem; opacity: 0.8; margin-top: 2px; }
+/* Order form: invalid fields */
+.application-form .is-invalid {
+  border-color: #c0392b !important;
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.15);
+}
+.application-form .client-error {
+  color: #c0392b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.35rem;
+}
