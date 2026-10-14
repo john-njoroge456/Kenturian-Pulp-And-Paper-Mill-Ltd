@@ -24,8 +24,6 @@ class OrderRequestAdmin(admin.ModelAdmin):
     readonly_fields = ("reference", "created_at")
     list_editable = ("status",)
     inlines = [OrderItemInline]
-    # Old single-item fields, hidden now and removed in stage 2
-    exclude = ("item_description", "color", "length", "gsm", "quantity")
 
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related("items")

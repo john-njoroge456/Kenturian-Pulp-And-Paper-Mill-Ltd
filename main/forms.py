@@ -7,9 +7,11 @@ import os
 from django import forms
 from django.utils import timezone
 
-from .models import OrderRequest, OrderItemOption
+
+from .models import OrderRequest, OrderItem, OrderItemOption
 from .validators import validate_upload
 from django.core.exceptions import ValidationError
+from django.forms import inlineformset_factory, BaseInlineFormSet
 
 
 COLOR_CHOICES = [
@@ -42,7 +44,7 @@ LIMITS = {
 
 NOTES_MAX = 500         # characters allowed in Additional Notes
 MAX_DELIVERY_DAYS = 60    # furthest ahead a client can ask for delivery
-
+MAX_ITEMS = 10
 INVALID_MESSAGES = {
     "length": "Enter the length as a number in millimetres, e.g. 1500.",
     "gsm": "Enter the GSM as a whole number, e.g. 80.",
@@ -75,33 +77,15 @@ def range_message(name):
 
 
 class OrderRequestForm(forms.ModelForm):
-    color = forms.ChoiceField(
-        label="Colour",
-        choices=COLOR_CHOICES,
-        required=False,
-        widget=forms.Select(attrs={"id": "id_color"}),
-    )
-    color_other = forms.CharField(
-        label="Other colour",
-        max_length=100,
-        required=False,
-        widget=forms.TextInput(attrs={
-            "placeholder": "e.g. Dark chocolate brown",
-            "id": "id_color_other",
-        }),
-    )
+    """Shared order details: who is ordering, delivery, LPO and notes."""
 
     class Meta:
         model = OrderRequest
         fields = [
-            "item_description", "color", "length", "gsm", "quantity",
             "company_name", "contact_person", "phone", "email",
             "delivery_location", "preferred_delivery_date", "lpo_file", "notes",
         ]
         widgets = {
-            "length": forms.NumberInput(attrs={"step": "0.01", "placeholder": "e.g. 1500", "id": "id_length"}),
-            "gsm": forms.NumberInput(attrs={"placeholder": "e.g. 80", "id": "id_gsm"}),
-            "quantity": forms.NumberInput(attrs={"placeholder": "e.g. 500", "id": "id_quantity"}),
             "company_name": forms.TextInput(attrs={"placeholder": "e.g. Kenturian Traders Ltd"}),
             "contact_person": forms.TextInput(attrs={"placeholder": "e.g. Jane Doe"}),
             "phone": forms.TextInput(attrs={
@@ -122,84 +106,23 @@ class OrderRequestForm(forms.ModelForm):
             }),
         }
         labels = {
-            "length": "Length (mm)",
-            "gsm": "GSM (paper weight)",
-            "quantity": "Quantity (kg)",
             "lpo_file": "Attach LPO (optional: PDF, JPG, PNG or Word, max 5 MB)",
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        item_choices = [
-            (o.name, o.name)
-            for o in OrderItemOption.objects.filter(is_active=True)
-        ]
-        choices = (
-            [("", "- Select an option -")]
-            + item_choices
-            + [("Custom / Other", "Custom / Other (describe in notes)")]
-        )
-        self.fields["item_description"] = forms.ChoiceField(
-            choices=choices,
-            label="Item Description",
-            widget=forms.Select(attrs={
-                "id": "id_item_description",
-                "data-color-rules": json.dumps(FIXED_COLORS),
-                "data-blocked-colors": json.dumps(BLOCKED_COLORS),
-            }),
-            error_messages={
-                "required": "Please select the item you want to order.",
-                "invalid_choice": "Please pick an item from the list.",
-            },
-        )
 
-        # Clear, specific messages instead of Django's generic ones
         for name, field in self.fields.items():
-            if name != "item_description":
-                label = field.label or name.replace("_", " ").capitalize()
-                field.error_messages["required"] = f"Please fill in '{label}'."
+            label = field.label or name.replace("_", " ").capitalize()
+            field.error_messages["required"] = f"Please fill in '{label}'."
             if name in INVALID_MESSAGES:
                 field.error_messages["invalid"] = INVALID_MESSAGES[name]
 
-        # Size limits: browser hint + clear message if the number is out of range
-        for name, (low, high, unit, title) in LIMITS.items():
-            field = self.fields[name]
-            field.widget.attrs["min"] = low
-            field.widget.attrs["max"] = high
-            field.widget.attrs["data-range-message"] = range_message(name)
-            for code in ("min_value", "max_value", "max_digits", "max_whole_digits"):
-                field.error_messages[code] = range_message(name)
-        self.fields["length"].error_messages["max_decimal_places"] = (
-            "Enter the length with at most 2 decimal places, e.g. 1500.50."
-        )
-
-        # Delivery date: today up to MAX_DELIVERY_DAYS ahead
         today = timezone.localdate()
         date_attrs = self.fields["preferred_delivery_date"].widget.attrs
         date_attrs["min"] = today.isoformat()
         date_attrs["max"] = (
             today + timedelta(days=MAX_DELIVERY_DAYS)).isoformat()
-
-        # Colour is required (locked colours are filled in by clean())
-        self.fields["color"].widget.attrs["required"] = "required"
-
-    # ---- field checks ----
-    def _check_range(self, name):
-        value = self.cleaned_data.get(name)
-        if value is not None:
-            low, high = LIMITS[name][0], LIMITS[name][1]
-            if not (low <= value <= high):
-                raise forms.ValidationError(range_message(name))
-        return value
-
-    def clean_length(self):
-        return self._check_range("length")
-
-    def clean_gsm(self):
-        return self._check_range("gsm")
-
-    def clean_quantity(self):
-        return self._check_range("quantity")
 
     def clean_phone(self):
         raw = (self.cleaned_data.get("phone") or "").strip()
@@ -212,7 +135,6 @@ class OrderRequestForm(forms.ModelForm):
             )
         digits = re.sub(r"\D", "", raw)
 
-        # International number that is not Kenyan
         if raw.startswith("+") and not digits.startswith("254"):
             if not 8 <= len(digits) <= 15:
                 raise forms.ValidationError(
@@ -221,7 +143,6 @@ class OrderRequestForm(forms.ModelForm):
                 )
             return "+" + digits
 
-        # Kenyan number written with the country code
         if digits.startswith("254"):
             if len(digits) != 12:
                 raise forms.ValidationError(
@@ -230,7 +151,6 @@ class OrderRequestForm(forms.ModelForm):
                 )
             return "+" + digits
 
-        # Kenyan number written with a leading 0
         if digits.startswith("0"):
             if len(digits) != 10:
                 raise forms.ValidationError(
@@ -244,7 +164,6 @@ class OrderRequestForm(forms.ModelForm):
         )
 
     def clean_notes(self):
-        # Browsers count a line break as 1 character but send 2, so normalise first
         text = (self.cleaned_data.get("notes")
                 or "").replace("\r\n", "\n").strip()
         if len(text) > NOTES_MAX:
@@ -276,14 +195,115 @@ class OrderRequestForm(forms.ModelForm):
         validate_upload(uploaded)
         return uploaded
 
-    # ---- cross-field checks ----
+    def full_clean(self):
+        super().full_clean()
+        for name in self.errors:
+            if name in self.fields:
+                css = self.fields[name].widget.attrs.get("class", "")
+                self.fields[name].widget.attrs["class"] = (
+                    css + " is-invalid").strip()
+
+
+class OrderItemForm(forms.ModelForm):
+    """One item line: item, colour, length, GSM and quantity."""
+    color = forms.ChoiceField(
+        label="Colour",
+        choices=COLOR_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={"class": "item-color"}),
+    )
+    color_other = forms.CharField(
+        label="Other colour",
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            "placeholder": "e.g. Dark chocolate brown",
+            "class": "item-color-other",
+        }),
+    )
+
+    class Meta:
+        model = OrderItem
+        fields = ["item_description", "color", "length", "gsm", "quantity"]
+        widgets = {
+            "length": forms.NumberInput(attrs={"step": "0.01", "placeholder": "e.g. 1500", "class": "item-length"}),
+            "gsm": forms.NumberInput(attrs={"placeholder": "e.g. 80", "class": "item-gsm"}),
+            "quantity": forms.NumberInput(attrs={"placeholder": "e.g. 500", "class": "item-quantity"}),
+        }
+        labels = {
+            "length": "Length (mm)",
+            "gsm": "GSM (paper weight)",
+            "quantity": "Quantity (kg)",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        item_choices = [
+            (o.name, o.name)
+            for o in OrderItemOption.objects.filter(is_active=True)
+        ]
+        choices = (
+            [("", "- Select an option -")]
+            + item_choices
+            + [("Custom / Other", "Custom / Other (describe in notes)")]
+        )
+        self.fields["item_description"] = forms.ChoiceField(
+            choices=choices,
+            label="Item Description",
+            widget=forms.Select(attrs={
+                "class": "item-description",
+                "data-color-rules": json.dumps(FIXED_COLORS),
+                "data-blocked-colors": json.dumps(BLOCKED_COLORS),
+            }),
+            error_messages={
+                "required": "Please select the item you want to order.",
+                "invalid_choice": "Please pick an item from the list.",
+            },
+        )
+
+        for name, field in self.fields.items():
+            if name != "item_description":
+                label = field.label or name.replace("_", " ").capitalize()
+                field.error_messages["required"] = f"Please fill in '{label}'."
+            if name in INVALID_MESSAGES:
+                field.error_messages["invalid"] = INVALID_MESSAGES[name]
+
+        for name, (low, high, unit, title) in LIMITS.items():
+            field = self.fields[name]
+            field.widget.attrs["min"] = low
+            field.widget.attrs["max"] = high
+            field.widget.attrs["data-range-message"] = range_message(name)
+            for code in ("min_value", "max_value", "max_digits", "max_whole_digits"):
+                field.error_messages[code] = range_message(name)
+        self.fields["length"].error_messages["max_decimal_places"] = (
+            "Enter the length with at most 2 decimal places, e.g. 1500.50."
+        )
+
+        self.fields["color"].widget.attrs["required"] = "required"
+
+    def _check_range(self, name):
+        value = self.cleaned_data.get(name)
+        if value is not None:
+            low, high = LIMITS[name][0], LIMITS[name][1]
+            if not (low <= value <= high):
+                raise forms.ValidationError(range_message(name))
+        return value
+
+    def clean_length(self):
+        return self._check_range("length")
+
+    def clean_gsm(self):
+        return self._check_range("gsm")
+
+    def clean_quantity(self):
+        return self._check_range("quantity")
+
     def clean(self):
         cleaned = super().clean()
         item_name = cleaned.get("item_description") or ""
         item = item_name.lower()
         color = cleaned.get("color") or ""
 
-        # Items that are always one colour
         fixed = next((c for key, c in FIXED_COLORS if key in item), None)
         if fixed:
             if color and color != fixed:
@@ -295,9 +315,8 @@ class OrderRequestForm(forms.ModelForm):
                 cleaned["color"] = fixed
             return cleaned
 
-        # Everything else needs a colour
         if item_name and not color:
-            self.add_error("color", "Please choose a colour for your order.")
+            self.add_error("color", "Please choose a colour for this item.")
             return cleaned
 
         error_field = "color"
@@ -311,7 +330,6 @@ class OrderRequestForm(forms.ModelForm):
             color = other
             error_field = "color_other"
 
-        # Colours an item is never made in (e.g. MG Cover is never white)
         blocked = [c for key,
                    colours in BLOCKED_COLORS if key in item for c in colours]
         hit = next((b for b in blocked if b.lower() in color.lower()), None)
@@ -320,7 +338,6 @@ class OrderRequestForm(forms.ModelForm):
                 error_field, f"{item_name} is not available in {hit}. Please choose another colour.")
         return cleaned
 
-    # ---- highlight the invalid fields ----
     def full_clean(self):
         super().full_clean()
         for name in self.errors:
@@ -328,6 +345,51 @@ class OrderRequestForm(forms.ModelForm):
                 css = self.fields[name].widget.attrs.get("class", "")
                 self.fields[name].widget.attrs["class"] = (
                     css + " is-invalid").strip()
+
+
+class BaseOrderItemFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        filled = [f for f in self.forms if f.has_changed()]
+        if len(filled) > MAX_ITEMS:
+            raise forms.ValidationError(
+                f"You can order up to {MAX_ITEMS} items per order. You added {len(filled)}. "
+                f"Please remove {len(filled) - MAX_ITEMS}, or place a second order for the rest."
+            )
+        seen = {}
+        for number, form in enumerate(self.forms, start=1):
+            if not form.has_changed() or form.errors:
+                continue
+            cd = form.cleaned_data
+            key = (
+                (cd.get("item_description") or "").strip().lower(),
+                (cd.get("color") or "").strip().lower(),
+                cd.get("length"),
+                cd.get("gsm"),
+            )
+            if key in seen:
+                first = seen[key]
+                form.add_error(
+                    None,
+                    f"This item is the same as item {first} ({cd['item_description']}, "
+                    f"{cd.get('color') or 'no colour'}, {float(cd['length']):g} mm, {cd['gsm']} GSM). "
+                    f"Please remove it and add its quantity to item {first} instead, "
+                    f"or change the specifications."
+                )
+            else:
+                seen[key] = number
+
+
+OrderItemFormSet = inlineformset_factory(
+    OrderRequest, OrderItem,
+    form=OrderItemForm,
+    formset=BaseOrderItemFormSet,
+    extra=0,
+    min_num=1,
+    max_num=MAX_ITEMS,
+    absolute_max=MAX_ITEMS + 5,
+    can_delete=False,
+)
 
 
 def _has_too_many_links(text):

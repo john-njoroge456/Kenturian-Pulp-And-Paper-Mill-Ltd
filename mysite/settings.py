@@ -43,6 +43,7 @@ ALLOWED_HOSTS = env_list('ALLOWED_HOSTS')
 CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
 
 INSTALLED_APPS = [
+    'django.contrib.humanize',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -115,7 +116,8 @@ COMPANY_PHONE = os.environ.get('COMPANY_PHONE', '+254720044513')
 FOOTER_WHATSAPP = os.environ.get('FOOTER_WHATSAPP', '254795979982')
 
 # Email: sends through SMTP when a password is provided, otherwise prints to the console
-EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')  # change for another provider
+# change for another provider
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')

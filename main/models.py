@@ -13,8 +13,6 @@ class OrderRequest(models.Model):
     """A client-submitted request to order paper rolls. Not a checkout/payment
     flow — this feeds Sales, who follow up with a quote/confirmation."""
 
-    # Adjust these to match your actual product line names.
-
     UNIT_CHOICES = [
         ("rolls", "Rolls"),
         ("kg", "Kilograms"),
@@ -32,16 +30,6 @@ class OrderRequest(models.Model):
     reference = models.CharField(
         max_length=20, unique=True, editable=False, blank=True)
 
-    # Order parameters
-    item_description = models.CharField(max_length=200)
-    color = models.CharField(max_length=100, blank=True,
-                             help_text="Leave blank if natural/unspecified")
-    length = models.DecimalField(
-        max_digits=10, decimal_places=2, help_text="Length in millimetres")
-    gsm = models.PositiveIntegerField(
-        help_text="Paper weight, grams per square metre")
-    quantity = models.PositiveIntegerField(
-        help_text="Quantity in kilograms (kg)")
     # Client / logistics
     company_name = models.CharField(max_length=200)
     contact_person = models.CharField(max_length=150)
@@ -55,7 +43,6 @@ class OrderRequest(models.Model):
         upload_to="order_lpos/%Y/%m/", blank=True, null=True)
     notes = models.TextField(blank=True)
 
-    # Internal tracking
     # Internal tracking
     status = models.CharField(
         max_length=12, choices=STATUS_CHOICES, default="new")

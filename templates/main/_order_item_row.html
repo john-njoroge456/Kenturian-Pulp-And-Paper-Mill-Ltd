@@ -1,0 +1,63 @@
+<div class="order-item-row" data-item-row>
+
+  <!-- Folded view: one-line summary -->
+  <div class="order-item-summary" data-open-item role="button" tabindex="0" aria-label="Edit this item">
+    <span class="order-item-badge order-item-num">{{ num }}</span>
+    <span class="order-item-summary-text">Item not completed yet</span>
+    <span class="order-item-actions">
+      <button type="button" class="btn-edit-item" data-open-item><i class="bi bi-pencil"></i> Edit</button>
+      <button type="button" class="btn-remove-item" data-remove-item aria-label="Remove this item"><i class="bi bi-x-lg"></i></button>
+    </span>
+  </div>
+
+  <!-- Open view: the full form -->
+  <div class="order-item-body">
+        <div class="order-item-head">
+      <span class="order-item-title">
+        Item <span class="order-item-num">{{ num }}</span>
+        <span class="order-item-editing">Editing</span>
+      </span>
+      <span class="order-item-head-actions">
+        <button type="button" class="btn-remove-item" data-remove-item aria-label="Remove this item">
+          <i class="bi bi-x-lg"></i> Remove
+        </button>
+        <button type="button" class="btn-done-item" data-done-item>
+          <i class="bi bi-check-lg"></i> Save item
+        </button>
+      </span>
+    </div>
+
+    {% for hidden in item.hidden_fields %}{{ hidden }}{% endfor %}
+        {{ item.non_field_errors }}
+
+    <label for="{{ item.item_description.id_for_label }}"><i class="bi bi-box-seam"></i> Item Description *</label>
+    {{ item.item_description }}
+    {{ item.item_description.errors }}
+
+    <label for="{{ item.color.id_for_label }}"><i class="bi bi-palette"></i> Colour *</label>
+    {{ item.color }}
+    <div class="form-text color-note"></div>
+    {{ item.color.errors }}
+    <div class="color-other-wrap" style="display:none; margin-top:0.6rem;">
+      {{ item.color_other }}
+      {{ item.color_other.errors }}
+    </div>
+
+    <div class="row">
+      <div class="col-6">
+        <label for="{{ item.length.id_for_label }}"><i class="bi bi-rulers"></i> Length (mm) *</label>
+        {{ item.length }}
+        {{ item.length.errors }}
+      </div>
+      <div class="col-6">
+        <label for="{{ item.gsm.id_for_label }}"><i class="bi bi-layers"></i> GSM *</label>
+        {{ item.gsm }}
+        {{ item.gsm.errors }}
+      </div>
+    </div>
+
+    <label for="{{ item.quantity.id_for_label }}"><i class="bi bi-hash"></i> Quantity (kg) *</label>
+    {{ item.quantity }}
+    {{ item.quantity.errors }}
+  </div>
+</div>

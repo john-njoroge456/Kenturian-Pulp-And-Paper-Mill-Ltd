@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Order Received — {{ COMPANY_NAME }}{% endblock %}
 
@@ -15,40 +15,73 @@
 
 {% block content %}
 <div class="section-block section-block-tight-top success-page-bg">
+
+  <!-- Confirmation message -->
   <div class="application-form-wrap">
     <div class="application-success-card text-center">
       <div class="success-check">
         <i class="bi bi-check-lg"></i>
       </div>
       <h3 class="mb-2">Order Request #{{ order.reference }} Received</h3>
-      <p class="mb-4" style="color:#555;">
-  Our team will review your request and get back to you at
-  <strong>{{ order.email }}</strong> or <strong>{{ order.phone }}</strong> shortly.
-  Quote this reference number for any follow-up.
-</p>
-<p class="mb-4" style="color:#888; font-size:0.9rem;">
-  <i class="bi bi-envelope-check me-1"></i> A copy of this order summary has been sent to {{ order.email }}.
-</p>
-
-      <div class="order-summary-confirmed mx-auto" style="max-width:520px;">
-        <span class="order-summary-badge">Confirmed</span>
-        <div class="job-key-details justify-content-center text-start">
-          <div class="key-detail"><i class="bi bi-box-seam"></i> {{ order.item_description }}</div>
-          <div class="key-detail"><i class="bi bi-rulers"></i> {{ order.length }} mm</div>
-          <div class="key-detail"><i class="bi bi-layers"></i> {{ order.gsm }} GSM</div>
-          <div class="key-detail"><i class="bi bi-hash"></i> {{ order.quantity }} kg</div>
-        </div>
-      </div>
-
-      <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
-        <a href="{% url 'main:index' %}" class="btn btn-navy-arrow">
-          <i class="bi bi-arrow-left me-1"></i> Back to Home
-        </a>
-        <a href="{% url 'main:order' %}" class="btn btn-order-pill">
-          <i class="bi bi-plus-lg me-1"></i> Place Another Order
-        </a>
-      </div>
+      <p class="mb-3" style="color:#555;">
+        Our team will review your request and get back to you at
+        <strong>{{ order.email }}</strong> or <strong>{{ order.phone }}</strong> shortly.
+        Quote this reference number for any follow-up.
+      </p>
+      <p class="mb-0" style="color:#888; font-size:0.9rem;">
+        <i class="bi bi-envelope-check me-1"></i> A copy of this order summary has been sent to {{ order.email }}.
+      </p>
     </div>
   </div>
+
+  <!-- Full-width order summary -->
+  <div class="order-summary-wide">
+    <div class="order-summary-confirmed">
+      <span class="order-summary-badge">Confirmed</span>
+      <table class="order-items-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Item</th><th>Colour</th>
+            <th class="num">Length</th><th class="num">GSM</th><th class="num">Qty</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in order.items.all %}
+          <tr>
+            <td class="idx">{{ forloop.counter }}</td>
+            <td data-label="Item">{{ item.item_description }}</td>
+            <td data-label="Colour">{{ item.color|default:"—" }}</td>
+            <td class="num" data-label="Length">{{ item.length|floatformat:"-2" }} mm</td>
+            <td class="num" data-label="GSM">{{ item.gsm }}</td>
+            <td class="num" data-label="Qty">{{ item.quantity|intcomma }} kg</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5">Total · {{ order.items.all|length }} item{{ order.items.all|length|pluralize }}</td>
+            <td class="num">{{ order.total_quantity|intcomma }} kg</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      {% if order.delivery_location or order.preferred_delivery_date %}
+      <div class="order-summary-meta">
+        {% if order.delivery_location %}<span><i class="bi bi-geo-alt"></i> {{ order.delivery_location }}</span>{% endif %}
+        {% if order.preferred_delivery_date %}<span><i class="bi bi-calendar-event"></i> {{ order.preferred_delivery_date|date:"d M Y" }}</span>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
+      <a href="{% url 'main:index' %}" class="btn btn-navy-arrow">
+        <i class="bi bi-arrow-left me-1"></i> Back to Home
+      </a>
+      <a href="{% url 'main:order' %}" class="btn btn-order-pill">
+        <i class="bi bi-plus-lg me-1"></i> Place Another Order
+      </a>
+    </div>
+  </div>
+
 </div>
 {% endblock %}

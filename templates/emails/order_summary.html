@@ -1,0 +1,73 @@
+{% load humanize %}<!doctype html>
+<html>
+<body style="margin:0;padding:0;background:#f4f6f9;font-family:Arial,Helvetica,sans-serif;color:#1f2a37;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:24px 0;">
+<tr><td align="center">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:10px;overflow:hidden;">
+
+  <tr><td style="background:#14335c;padding:20px 24px;">
+    <div style="font-size:18px;font-weight:bold;color:#ffffff;">Kenturian Pulp &amp; Paper Mills Limited</div>
+    <div style="font-size:13px;color:#d9a441;margin-top:4px;">
+      {% if for_client %}Order request received{% else %}New order request{% endif %} &middot; {{ order.reference }}
+    </div>
+  </td></tr>
+
+  <tr><td style="padding:24px;font-size:14px;line-height:1.5;">
+    {% if for_client %}
+      <p style="margin-top:0;">Hi {{ order.contact_person }},</p>
+      <p>Thanks for your order request. Here's a copy for your records.</p>
+    {% else %}
+      <p style="margin-top:0;"><strong>{{ order.company_name }}</strong> has placed a new order request.</p>
+    {% endif %}
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:13px;margin:16px 0;">
+      <tr style="background:#f7f3e8;">
+        <th align="left" style="padding:8px;border-bottom:2px solid #e0d6bd;color:#8a7a52;">#</th>
+        <th align="left" style="padding:8px;border-bottom:2px solid #e0d6bd;color:#8a7a52;">Item</th>
+        <th align="left" style="padding:8px;border-bottom:2px solid #e0d6bd;color:#8a7a52;">Colour</th>
+        <th align="right" style="padding:8px;border-bottom:2px solid #e0d6bd;color:#8a7a52;">Length</th>
+        <th align="right" style="padding:8px;border-bottom:2px solid #e0d6bd;color:#8a7a52;">GSM</th>
+        <th align="right" style="padding:8px;border-bottom:2px solid #e0d6bd;color:#8a7a52;">Qty</th>
+      </tr>
+      {% for item in items %}
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #eee;color:#d9a441;font-weight:bold;">{{ forloop.counter }}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">{{ item.item_description }}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">{{ item.color|default:"—" }}</td>
+        <td align="right" style="padding:8px;border-bottom:1px solid #eee;white-space:nowrap;">{{ item.length|floatformat:"-2" }} mm</td>
+        <td align="right" style="padding:8px;border-bottom:1px solid #eee;">{{ item.gsm }}</td>
+        <td align="right" style="padding:8px;border-bottom:1px solid #eee;white-space:nowrap;">{{ item.quantity|intcomma }} kg</td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td colspan="5" align="right" style="padding:10px 8px;font-weight:bold;color:#14335c;">Total &middot; {{ items|length }} item{{ items|length|pluralize }}</td>
+        <td align="right" style="padding:10px 8px;font-weight:bold;color:#14335c;white-space:nowrap;">{{ total_kg|intcomma }} kg</td>
+      </tr>
+    </table>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;">
+      <tr><td style="padding:3px 0;color:#6b7280;width:150px;">Delivery location</td><td>{{ order.delivery_location|default:"—" }}</td></tr>
+      <tr><td style="padding:3px 0;color:#6b7280;">Preferred date</td><td>{{ order.preferred_delivery_date|date:"d M Y"|default:"—" }}</td></tr>
+      {% if not for_client %}
+      <tr><td style="padding:3px 0;color:#6b7280;">Contact</td><td>{{ order.contact_person }}</td></tr>
+      <tr><td style="padding:3px 0;color:#6b7280;">Phone</td><td>{{ order.phone }}</td></tr>
+      <tr><td style="padding:3px 0;color:#6b7280;">Email</td><td>{{ order.email }}</td></tr>
+      <tr><td style="padding:3px 0;color:#6b7280;">LPO attached</td><td>{{ order.lpo_file|yesno:"Yes,No" }}</td></tr>
+      {% endif %}
+      <tr><td style="padding:3px 0;color:#6b7280;vertical-align:top;">Notes</td><td>{{ order.notes|default:"—"|linebreaksbr }}</td></tr>
+    </table>
+
+    {% if for_client %}
+      <p style="margin-bottom:0;">Our team will review your request and follow up shortly. Please quote reference <strong>{{ order.reference }}</strong> in any correspondence.</p>
+    {% endif %}
+  </td></tr>
+
+  <tr><td style="background:#f7f8fa;padding:14px 24px;font-size:12px;color:#6b7280;">
+    Kenturian Pulp &amp; Paper Mills Limited
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>

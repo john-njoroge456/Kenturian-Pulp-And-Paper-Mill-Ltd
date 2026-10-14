@@ -31,11 +31,21 @@
 
         <form method="post" enctype="multipart/form-data" class="application-form" id="orderForm">
           {% csrf_token %}
+          {{ formset.management_form }}
 
-          {% if form.errors %}
+          {% if form.errors or formset.total_error_count %}
           <div class="alert alert-danger" role="alert" id="formErrorSummary">
             <strong>We couldn't send your order yet.</strong> Please fix the following:
             <ul class="mb-0 mt-2">
+              {% for error in formset.non_form_errors %}<li>{{ error }}</li>{% endfor %}
+              {% for item in formset %}
+                {% for field in item %}{% for error in field.errors %}
+                <li><strong>Item {{ forloop.parentloop.parentloop.counter }} – {{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}{% endfor %}
+                {% for error in item.non_field_errors %}
+                <li><strong>Item {{ forloop.parentloop.counter }}:</strong> {{ error }}</li>
+                {% endfor %}
+              {% endfor %}
               {% for field in form %}{% for error in field.errors %}
               <li><strong>{{ field.label }}:</strong> {{ error }}</li>
               {% endfor %}{% endfor %}
@@ -44,36 +54,28 @@
           </div>
           {% endif %}
 
-          <h6 class="footer-section-title" style="color:#14335c;">Product Specification</h6>
+          <h6 class="footer-section-title" style="color:#14335c;">Products</h6>
+          <p class="form-text mt-0 mb-3">You can add up to {{ max_items }} items to one order, all delivered together under a single LPO.</p>
 
-          <label for="id_item_description"><i class="bi bi-box-seam"></i> Item Description *</label>
-          {{ form.item_description }}
-          {{ form.item_description.errors }}
-
-          <label for="id_color"><i class="bi bi-palette"></i> Colour *</label>
-          {{ form.color }}
-          {{ form.color.errors }}
-          <div id="colorOtherWrap" style="display:none; margin-top:0.6rem;">
-            {{ form.color_other }}
-            {{ form.color_other.errors }}
+          <div id="itemRows">
+            {% for item in formset %}
+              {% include "main/_order_item_row.html" with item=item num=forloop.counter %}
+            {% endfor %}
           </div>
 
-          <div class="row">
-            <div class="col-6">
-              <label for="id_length"><i class="bi bi-rulers"></i> Length (mm) *</label>
-              {{ form.length }}
-              {{ form.length.errors }}
-            </div>
-            <div class="col-6">
-              <label for="id_gsm"><i class="bi bi-layers"></i> GSM *</label>
-              {{ form.gsm }}
-              {{ form.gsm.errors }}
-            </div>
-          </div>
+          <template id="itemRowTemplate">
+            {% include "main/_order_item_row.html" with item=formset.empty_form num="" %}
+          </template>
 
-          <label for="id_quantity"><i class="bi bi-hash"></i> Quantity (kg) *</label>
-          {{ form.quantity }}
-          {{ form.quantity.errors }}
+                    <button type="button" class="add-item-tile" id="addItemBtn">
+            <span><i class="bi bi-plus-circle me-2"></i><span id="addItemLabel">Add another item</span></span>
+            <span class="add-item-count" id="itemCountNote"></span>
+          </button>
+                    <p class="item-limit-note" id="itemLimitNote" hidden>
+            <i class="bi bi-info-circle me-1"></i>
+            {{ max_items }} of {{ max_items }} items — that's the maximum for one order.
+            Need more? Place a second order after this one.
+          </p>
 
           <hr class="my-4">
           <h6 class="footer-section-title" style="color:#14335c;">Your Details</h6>
@@ -127,16 +129,15 @@
           {{ form.notes }}
           {{ form.notes.errors }}
 
-          <!-- Live recap strip, right before submit -->
-          <div class="job-key-details mt-4 mb-0" id="orderRecapStrip">
-            <h6 class="footer-section-title mb-2" style="color:#14335c; width:100%;">Order Summary</h6>
-            <div class="key-detail"><i class="bi bi-box-seam"></i> <span id="recapItem">Select an item</span></div>
-            <div class="key-detail"><i class="bi bi-palette"></i> <span id="recapColor">No colour set</span></div>
-            <div class="key-detail"><i class="bi bi-rulers"></i> <span id="recapLength">Length —</span></div>
-            <div class="key-detail"><i class="bi bi-layers"></i> <span id="recapGsm">GSM —</span></div>
-            <div class="key-detail"><i class="bi bi-hash"></i> <span id="recapQty">Quantity —</span></div>
-            <div class="key-detail"><i class="bi bi-geo-alt"></i> <span id="recapDelivery">Delivery location —</span></div>
-            <div class="key-detail"><i class="bi bi-calendar-event"></i> <span id="recapDate">Delivery date —</span></div>
+          <!-- Live recap, right before submit -->
+          <div class="order-recap mt-4" id="orderRecapStrip">
+            <h6 class="footer-section-title mb-2" style="color:#14335c;">Order Summary</h6>
+            <ol class="recap-items" id="recapItems"></ol>
+            <div class="job-key-details mb-0">
+              <div class="key-detail"><i class="bi bi-hash"></i> <span id="recapTotal">Total —</span></div>
+              <div class="key-detail"><i class="bi bi-geo-alt"></i> <span id="recapDelivery">Delivery location —</span></div>
+              <div class="key-detail"><i class="bi bi-calendar-event"></i> <span id="recapDate">Delivery date —</span></div>
+            </div>
           </div>
 
           <button type="submit" class="btn btn-navy-arrow contact-submit-btn w-100 mt-4">
@@ -176,67 +177,152 @@
 {{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  var itemField = document.getElementById('id_item_description');
-  var colorField = document.getElementById('id_color');
-  var colorOtherField = document.getElementById('id_color_other');
-  var colorOtherWrap = document.getElementById('colorOtherWrap');
-  var lengthField = document.getElementById('id_length');
-  var gsmField = document.getElementById('id_gsm');
-  var qtyField = document.getElementById('id_quantity');
+  var MAX_ITEMS = {{ max_items }};
+  var list = document.getElementById('itemRows');
+  var tpl = document.getElementById('itemRowTemplate');
+  var totalInput = document.getElementById('id_items-TOTAL_FORMS');
+  var addBtn = document.getElementById('addItemBtn');
+  var addLabel = document.getElementById('addItemLabel');
+  var countNote = document.getElementById('itemCountNote');
+
+  var recapItems = document.getElementById('recapItems');
+  var recapTotal = document.getElementById('recapTotal');
+  var recapDelivery = document.getElementById('recapDelivery');
+  var recapDate = document.getElementById('recapDate');
   var deliveryField = document.getElementById('id_delivery_location');
   var dateField = document.getElementById('id_preferred_delivery_date');
 
-  var recapItem = document.getElementById('recapItem');
-  var recapColor = document.getElementById('recapColor');
-  var recapLength = document.getElementById('recapLength');
-  var recapGsm = document.getElementById('recapGsm');
-  var recapQty = document.getElementById('recapQty');
-  var recapDelivery = document.getElementById('recapDelivery');
-  var recapDate = document.getElementById('recapDate');
+  function rows() { return list.querySelectorAll('[data-item-row]'); }
 
-  function toggleColorOther() {
-    if (!colorField || !colorOtherWrap) return;
-    colorOtherWrap.style.display = colorField.value === 'Other' ? 'block' : 'none';
+  // --- Describe one item in a single line ---
+  function itemSummary(row) {
+    var itemSel = row.querySelector('.item-description');
+    var opt = itemSel.options[itemSel.selectedIndex];
+    var colorSel = row.querySelector('.item-color');
+    var color = colorSel.value === 'Other'
+      ? (row.querySelector('.item-color-other').value || '')
+      : colorSel.value;
+    var len = row.querySelector('.item-length').value;
+    var gsm = row.querySelector('.item-gsm').value;
+    var qty = row.querySelector('.item-quantity').value;
+
+    var parts = [opt && opt.value ? opt.text : 'Item not selected'];
+    if (color) parts.push(color);
+    if (len) parts.push(len + ' mm');
+    if (gsm) parts.push(gsm + ' GSM');
+    if (qty) parts.push((parseFloat(qty) || 0).toLocaleString() + ' kg');
+    return { text: parts.join(' · '), qty: parseFloat(qty) || 0 };
   }
 
+  // --- Live order summary + folded item lines ---
   function updateRecap() {
-    if (itemField) {
-      var selected = itemField.options[itemField.selectedIndex];
-      recapItem.textContent = selected && selected.value ? selected.text : 'Select an item';
-    }
-    if (colorField) {
-      if (colorField.value === 'Other') {
-        recapColor.textContent = (colorOtherField && colorOtherField.value) ? colorOtherField.value : 'No colour set';
-      } else {
-        recapColor.textContent = colorField.value ? colorField.value : 'No colour set';
-      }
-    }
-    if (lengthField) recapLength.textContent = lengthField.value ? lengthField.value + ' mm' : 'Length —';
-    if (gsmField) recapGsm.textContent = gsmField.value ? gsmField.value + ' GSM' : 'GSM —';
-    if (qtyField) recapQty.textContent = qtyField.value ? qtyField.value + ' kg' : 'Quantity —';
-    if (deliveryField) recapDelivery.textContent = deliveryField.value ? deliveryField.value : 'Delivery location —';
-    if (dateField) recapDate.textContent = dateField.value ? dateField.value : 'Delivery date —';
+    var total = 0;
+    recapItems.innerHTML = '';
+    rows().forEach(function (row) {
+      var s = itemSummary(row);
+      total += s.qty;
+      row.querySelector('.order-item-summary-text').textContent = s.text;
+            var folded = row.classList.contains('is-collapsed');
+      row.classList.toggle('has-error',
+        !!row.querySelector('.is-invalid, .client-error') || (folded && !rowComplete(row)));
+      var li = document.createElement('li');
+      li.textContent = s.text;
+      recapItems.appendChild(li);
+    });
+    recapTotal.textContent = total ? 'Total ' + total.toLocaleString() + ' kg' : 'Total —';
+    if (deliveryField) recapDelivery.textContent = deliveryField.value || 'Delivery location —';
+    if (dateField) recapDate.textContent = dateField.value || 'Delivery date —';
   }
 
-  [itemField, colorField, colorOtherField, lengthField, gsmField, qtyField, deliveryField, dateField].forEach(function (el) {
-    if (el) el.addEventListener('input', updateRecap);
-    if (el) el.addEventListener('change', updateRecap);
-  });
+  // --- Open one item, fold the rest ---
+  function openRow(target) {
+    rows().forEach(function (row) {
+      row.classList.toggle('is-collapsed', row !== target);
+    });
+    updateRecap();
+  }
 
-  if (colorField) colorField.addEventListener('change', toggleColorOther);
+  function rowComplete(row) {
+    return Array.prototype.every.call(
+      row.querySelectorAll('input, select, textarea'),
+      function (el) { return el.disabled || !el.willValidate || el.validity.valid; }
+    );
+  }
 
-  // --- Colour rules (fixed colours and blocked colours come from forms.py) ---
-  if (itemField && colorField) {
-    var rules = [];
-    var blockedRules = [];
+  function foldRow(row) {
+    if (!rowComplete(row)) {
+      focusedFirst = false;
+      row.querySelectorAll('input, select, textarea').forEach(function (el) {
+        if (!el.disabled && el.willValidate) el.checkValidity();
+      });
+      updateRecap();
+      return;
+    }
+    row.classList.add('is-collapsed');
+    updateRecap();
+  }
+
+  // --- Keep row numbers, field names and the item count in step ---
+  function renumber() {
+    var all = rows();
+    all.forEach(function (row, i) {
+      row.querySelectorAll('[name], [id], label[for]').forEach(function (el) {
+        ['name', 'id', 'for'].forEach(function (attr) {
+          var v = el.getAttribute(attr);
+          if (v) el.setAttribute(attr, v.replace(/items-(\d+|__prefix__)-/, 'items-' + i + '-'));
+        });
+      });
+      row.querySelectorAll('.order-item-num').forEach(function (n) { n.textContent = i + 1; });
+      row.querySelectorAll('[data-remove-item]').forEach(function (b) {
+        b.style.display = all.length > 1 ? '' : 'none';
+      });
+    });
+    totalInput.value = all.length;
+
+    var full = all.length >= MAX_ITEMS;
+    addBtn.disabled = full;
+    addBtn.hidden = full;
+    document.getElementById('itemLimitNote').hidden = !full;
+          addLabel.textContent = full
+      ? "You've reached the maximum of " + MAX_ITEMS + ' items'
+      : 'Add another item';
+    countNote.textContent = all.length + ' of ' + MAX_ITEMS;
+    updateRecap();
+  }
+
+  // --- Before the browser checks the form, open the first item with a problem ---
+  function flagInvalidRows() {
+    var firstBad = null;
+    rows().forEach(function (row) {
+      var bad = Array.prototype.some.call(
+        row.querySelectorAll('input, select, textarea'),
+        function (el) { return !el.disabled && el.willValidate && !el.validity.valid; }
+      );
+      row.classList.toggle('has-error', bad);
+      if (bad && !firstBad) firstBad = row;
+    });
+    if (firstBad) {
+      openRow(firstBad);
+      rows().forEach(function (row) {
+        if (row.querySelector(':invalid')) row.classList.add('has-error');
+      });
+    }
+  }
+
+  // --- Colour rules for one row (fixed and blocked colours come from forms.py) ---
+  function setupRow(row) {
+    var itemField = row.querySelector('.item-description');
+    var colorField = row.querySelector('.item-color');
+    var otherWrap = row.querySelector('.color-other-wrap');
+    var colorNote = row.querySelector('.color-note');
+    var rules = [], blockedRules = [];
     try { rules = JSON.parse(itemField.dataset.colorRules || '[]'); } catch (e) {}
     try { blockedRules = JSON.parse(itemField.dataset.blockedColors || '[]'); } catch (e) {}
-
-    var colorNote = document.createElement('div');
-    colorNote.className = 'form-text';
-    colorField.insertAdjacentElement('afterend', colorNote);
-
     var wasLocked = false;
+
+    function toggleOther() {
+      otherWrap.style.display = colorField.value === 'Other' ? 'block' : 'none';
+    }
 
     function fixedColorFor(text) {
       text = (text || '').toLowerCase();
@@ -261,7 +347,6 @@ document.addEventListener('DOMContentLoaded', function () {
       var fixed = fixedColorFor(label);
       var blocked = blockedColorsFor(label);
 
-      // Hide colours this item is never made in
       Array.prototype.forEach.call(colorField.options, function (o) {
         var hide = blocked.indexOf(o.value) !== -1;
         o.hidden = hide;
@@ -275,17 +360,91 @@ document.addEventListener('DOMContentLoaded', function () {
         wasLocked = true;
       } else {
         colorField.disabled = false;
-        colorNote.textContent = blocked.length ? label + ' is not available in ' + blocked.join(', ') + '.' : '';
+        colorNote.textContent = '';
         if ((wasLocked && !initial) || blocked.indexOf(colorField.value) !== -1) colorField.value = '';
         wasLocked = false;
       }
-      colorField.dispatchEvent(new Event('change'));
+      toggleOther();
+      updateRecap();
     }
 
     itemField.addEventListener('change', function () { applyColorRule(false); });
+    colorField.addEventListener('change', toggleOther);
     applyColorRule(true);
   }
 
+  // --- Add / open / remove items ---
+  addBtn.addEventListener('click', function () {
+    if (rows().length >= MAX_ITEMS) return;
+    var frag = tpl.content.cloneNode(true);
+    var row = frag.querySelector('[data-item-row]');
+    list.appendChild(frag);
+    renumber();
+    setupRow(row);
+    openRow(row);
+    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    row.querySelector('.item-description').focus({ preventScroll: true });
+  });
+
+   list.addEventListener('click', function (e) {
+    var doneBtn = e.target.closest('[data-done-item]');
+    if (doneBtn) { foldRow(doneBtn.closest('[data-item-row]')); return; }
+
+    var removeBtn = e.target.closest('[data-remove-item]');
+    if (removeBtn) {
+      if (rows().length <= 1) return;
+      var row = removeBtn.closest('[data-item-row]');
+      var wasOpen = !row.classList.contains('is-collapsed');
+      row.remove();
+      renumber();
+      if (wasOpen) { var all = rows(); openRow(all[all.length - 1]); }
+      return;
+    }
+    var opener = e.target.closest('[data-open-item]');
+    if (opener) openRow(opener.closest('[data-item-row]'));
+  });
+
+  list.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('order-item-summary')) {
+      e.preventDefault();
+      openRow(e.target.closest('[data-item-row]'));
+    }
+  });
+
+  list.addEventListener('focusout', function () {
+    setTimeout(function () {
+      if (list.contains(document.activeElement)) return;
+      rows().forEach(function (row) {
+        if (!row.classList.contains('is-collapsed') && rowComplete(row)) {
+          row.classList.add('is-collapsed');
+        }
+      });
+      updateRecap();
+    }, 0);
+  });
+
+  // setTimeout lets the error-clearing code run first, so red flags update correctly
+  list.addEventListener('input', function () { setTimeout(updateRecap, 0); });
+  list.addEventListener('change', function () { setTimeout(updateRecap, 0); });
+  [deliveryField, dateField].forEach(function (el) {
+    if (el) { el.addEventListener('input', updateRecap); el.addEventListener('change', updateRecap); }
+  });
+
+  rows().forEach(setupRow);
+  renumber();
+
+  // On load: open the first item with a server error, otherwise the last item
+  (function () {
+    var all = rows();
+    var firstErr = null;
+    all.forEach(function (row) {
+      if (!firstErr && row.querySelector('.is-invalid, .errorlist')) firstErr = row;
+    });
+    openRow(firstErr || all[all.length - 1]);
+    all.forEach(function (row) {
+      if (row.querySelector('.is-invalid, .errorlist')) row.classList.add('has-error');
+    });
+  })();
   // --- Phone: only allow digits and phone punctuation while typing ---
   var phone = document.getElementById('id_phone');
   if (phone) {
@@ -330,6 +489,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   }
+
   // --- Show clear inline messages instead of the browser's brief tooltip ---
   var orderForm = document.getElementById('orderForm');
   if (orderForm) {
@@ -349,11 +509,13 @@ document.addEventListener('DOMContentLoaded', function () {
       if (v.valueMissing) {
         var lab = document.querySelector('label[for="' + el.id + '"]');
         var name = lab ? lab.textContent.replace('*', '').trim() : 'this field';
-        return "Please fill in '" + name + "'.";
+        var row = el.closest('[data-item-row]');
+        var prefix = row ? 'Item ' + row.querySelector('.order-item-num').textContent + ': ' : '';
+        return prefix + "Please fill in '" + name + "'.";
       }
       if (v.rangeUnderflow || v.rangeOverflow) return el.dataset.rangeMessage || el.validationMessage;
       if (v.stepMismatch) {
-        return el.id === 'id_length'
+        return el.classList.contains('item-length')
           ? 'Enter the length with at most 2 decimal places, e.g. 1500.50.'
           : 'Enter a whole number without decimals, e.g. 80.';
       }
@@ -363,7 +525,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     orderForm.addEventListener('invalid', function (e) {
-      e.preventDefault();                       // hide the browser's own tooltip
+      e.preventDefault();
       var el = e.target;
       clearFieldError(el);
       el.classList.add('is-invalid');
@@ -382,11 +544,12 @@ document.addEventListener('DOMContentLoaded', function () {
     orderForm.addEventListener('input', function (e) { clearFieldError(e.target); });
     orderForm.addEventListener('change', function (e) { clearFieldError(e.target); });
 
-    var submitBtn = orderForm.querySelector('[type="submit"]');
-    if (submitBtn) submitBtn.addEventListener('click', function () { focusedFirst = false; });
+        var submitBtn = orderForm.querySelector('[type="submit"]');
+    if (submitBtn) submitBtn.addEventListener('click', function () {
+      focusedFirst = false;
+      flagInvalidRows();
+    });
   }
-  toggleColorOther();
-  updateRecap();
 
   // --- Bring the error summary into view ---
   var summary = document.getElementById('formErrorSummary');

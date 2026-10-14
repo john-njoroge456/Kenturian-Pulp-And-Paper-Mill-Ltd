@@ -1,36 +1,68 @@
-from .models import (
-    Product, NewsArticle, NewsCategory, NewsTag, GalleryImage,
-    JobPosting, EmployeeStory, LeadershipMember, ContactMessage, JobApplication
-)
-from .forms import ContactForm, JobApplicationForm
+import logging
+import mimetypes
+import os
+from django.template.loader import render_to_string
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.conf import settings
 from django.core.mail import send_mail, EmailMessage
 from django.utils.text import Truncator
 from django.core.paginator import Paginator
+from django.db import transaction
 from .models import OrderRequest
-from .forms import OrderRequestForm
-import logging
-import mimetypes
-import os
+from .forms import OrderRequestForm, OrderItemFormSet, MAX_ITEMS
+
+
+from .models import (
+    Product, NewsArticle, NewsCategory, NewsTag, GalleryImage,
+    JobPosting, EmployeeStory, LeadershipMember, ContactMessage, JobApplication
+)
+from .forms import ContactForm, JobApplicationForm
 
 logger = logging.getLogger(__name__)
+
+
+def _order_item_lines(items):
+    return "\n".join(
+        f"  {n}. {i.item_description} | Colour: {i.color or '-'} | "
+        f"Length: {i.length} mm | GSM: {i.gsm} | Qty: {i.quantity} kg"
+        for n, i in enumerate(items, 1)
+    )
 
 
 def order_request_view(request):
     hero_image = GalleryImage.objects.filter(
         category='order_hero').order_by("-uploaded_at").first()
+
     if request.method == "POST":
         form = OrderRequestForm(request.POST, request.FILES)
-        if form.is_valid():
-            order = form.save()
+        formset = OrderItemFormSet(
+            request.POST, instance=OrderRequest(), prefix="items")
+        form_ok = form.is_valid()
+        items_ok = formset.is_valid()   # run both so every error shows at once
+
+        if form_ok and items_ok:
+            with transaction.atomic():
+                order = form.save()
+                formset.instance = order
+                items = formset.save(commit=False)
+                for position, item in enumerate(items, start=1):
+                    item.position = position
+                    item.save()
+
+            items = list(order.items.all())
+            item_lines = _order_item_lines(items)
+            total_kg = sum(i.quantity for i in items)
+            email_ctx = {"order": order, "items": items, "total_kg": total_kg}
+            html_company = render_to_string(
+                "emails/order_summary.html", {**email_ctx, "for_client": False})
+            html_client = render_to_string(
+                "emails/order_summary.html", {**email_ctx, "for_client": True})
             subject = f"New order request {order.reference} — {order.company_name}"
             message = (
                 f"Reference: {order.reference}\n"
-                f"Item: {order.item_description} | Color: {order.color or '-'}\n"
-                f"Length: {order.length} mm | GSM: {order.gsm} | "
-                f"Quantity: {order.quantity} kg\n"
+                f"Items ({len(items)}):\n{item_lines}\n"
+                f"Total quantity: {total_kg} kg\n\n"
                 f"Delivery location: {order.delivery_location or '-'} | "
                 f"Preferred date: {order.preferred_delivery_date or '-'}\n"
                 f"Contact: {order.contact_person}, {order.phone}, {order.email}\n"
@@ -38,20 +70,18 @@ def order_request_view(request):
                 f"LPO attached: {'Yes' if order.lpo_file else 'No'}"
             )
             try:
-                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [
-                          settings.COMPANY_EMAIL])
+                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL,
+                          [settings.COMPANY_EMAIL], html_message=html_company)
             except Exception:
                 pass
 
-            # Send a confirmation copy to the client for their own records
             client_subject = f"Your order request {order.reference} — Kenturian Pulp & Paper Mills Limited"
             client_message = (
                 f"Hi {order.contact_person},\n\n"
                 f"Thanks for your order request — here's a copy for your records.\n\n"
                 f"Reference: {order.reference}\n"
-                f"Item: {order.item_description} | Color: {order.color or '-'}\n"
-                f"Length: {order.length} mm | GSM: {order.gsm} | "
-                f"Quantity: {order.quantity} kg\n"
+                f"Items ({len(items)}):\n{item_lines}\n"
+                f"Total quantity: {total_kg} kg\n\n"
                 f"Delivery location: {order.delivery_location or '-'} | "
                 f"Preferred date: {order.preferred_delivery_date or '-'}\n\n"
                 f"Our team will review your request and follow up shortly. "
@@ -59,8 +89,8 @@ def order_request_view(request):
                 f"— Kenturian Pulp & Paper Mills Limited"
             )
             try:
-                send_mail(client_subject, client_message, settings.DEFAULT_FROM_EMAIL, [
-                          order.email])
+                send_mail(client_subject, client_message,
+                          settings.DEFAULT_FROM_EMAIL, [order.email], html_message=html_client)
                 order.client_email_sent = True
                 order.save(update_fields=["client_email_sent"])
             except Exception:
@@ -69,11 +99,19 @@ def order_request_view(request):
             return redirect(reverse("main:order_success", args=[order.reference]))
     else:
         form = OrderRequestForm()
-    return render(request, "main/order.html", {"form": form, "hero_image": hero_image})
+        formset = OrderItemFormSet(instance=OrderRequest(), prefix="items")
+
+    return render(request, "main/order.html", {
+        "form": form,
+        "formset": formset,
+        "max_items": MAX_ITEMS,
+        "hero_image": hero_image,
+    })
 
 
 def order_success_view(request, reference):
-    order = get_object_or_404(OrderRequest, reference=reference)
+    order = get_object_or_404(
+        OrderRequest.objects.prefetch_related("items"), reference=reference)
     return render(request, "main/order_success.html", {"order": order})
 
 
