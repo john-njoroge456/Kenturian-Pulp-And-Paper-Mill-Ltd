@@ -1,10 +1,14 @@
-from .models import LeadershipMember
+from django.urls import path
+
 from django.contrib import admin
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
-from .reports import orders_workbook, xlsx_response
-
+from django.core.exceptions import PermissionDenied
+from django.template.response import TemplateResponse
 from django.utils.html import format_html
+from .models import LeadershipMember
+from .reports import (orders_workbook, xlsx_response, PRESETS,
+                      resolve_period, build_order_report, report_workbook)
 from .models import Product, NewsArticle, GalleryImage, JobPosting, EmployeeStory, NewsCategory, NewsTag, OrderRequest, OrderItem, OrderItemOption, ContactMessage, JobApplication
 
 
@@ -65,6 +69,9 @@ class OrderRequestAdmin(admin.ModelAdmin):
         return f"{obj.total_quantity:,}"
 
     def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context["can_view_report"] = request.user.has_perm(
+            "main.view_order_report")
         response = super().changelist_view(request, extra_context=extra_context)
         try:
             qs = response.context_data["cl"].queryset
@@ -78,6 +85,34 @@ class OrderRequestAdmin(admin.ModelAdmin):
             "kg": totals["kg"] or 0,
         }
         return response
+
+    def get_urls(self):
+        custom = [
+            path("report/", self.admin_site.admin_view(self.report_view),
+                 name="main_orderrequest_report"),
+        ]
+        return custom + super().get_urls()
+
+    def report_view(self, request):
+        if not request.user.has_perm("main.view_order_report"):
+            raise PermissionDenied
+
+        preset, start, end = resolve_period(request.GET)
+        report = build_order_report(start, end)
+
+        if request.GET.get("export") == "xlsx":
+            filename = f"kenturian-order-report-{start:%Y%m%d}-{end:%Y%m%d}.xlsx"
+            return xlsx_response(report_workbook(report), filename)
+
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "title": "Order report",
+            "report": report,
+            "preset": preset,
+            "presets": PRESETS,
+        }
+        return TemplateResponse(request, "admin/main/orderrequest/report.html", context)
 
 
 @admin.register(OrderItemOption)

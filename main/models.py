@@ -52,6 +52,7 @@ class OrderRequest(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        permissions = [("view_order_report", "Can view order reports")]
 
     def save(self, *args, **kwargs):
         if not self.reference:
