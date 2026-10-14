@@ -1,12 +1,15 @@
 import json
 import re
 from datetime import timedelta
+import os
+
 
 from django import forms
 from django.utils import timezone
 
 from .models import OrderRequest, OrderItemOption
 from .validators import validate_upload
+from django.core.exceptions import ValidationError
 
 
 COLOR_CHOICES = [
@@ -47,6 +50,19 @@ INVALID_MESSAGES = {
     "email": "Enter a valid email address, e.g. name@company.co.ke.",
     "preferred_delivery_date": "Enter a valid date.",
 }
+CONTACT_MESSAGE_MIN = 10
+CONTACT_MESSAGE_MAX = 500
+MAX_LINKS = 2
+CV_MAX_MB = 5
+# First bytes of real PDF / DOCX / DOC files, so a renamed .exe can't pass as a CV
+CV_SIGNATURES = {
+    ".pdf": (b"%PDF",),
+    ".docx": (b"PK\x03\x04",),
+    ".doc": (b"\xd0\xcf\x11\xe0",),
+}
+NAME_RE = re.compile(r"^[^\W\d_][^\W\d_ .'\-]*(?:[ .'\-]+[^\W\d_]+)*\.?$")
+PHONE_RE = re.compile(r"^\+?\d{9,15}$")
+LINK_RE = re.compile(r"(https?://|www\.)", re.IGNORECASE)
 
 
 def range_message(name):
@@ -314,25 +330,195 @@ class OrderRequestForm(forms.ModelForm):
                     css + " is-invalid").strip()
 
 
+def _has_too_many_links(text):
+    return len(re.findall(r"https?://|www\.", text, flags=re.IGNORECASE)) > MAX_LINKS
+
+
 class ContactForm(forms.Form):
-    name = forms.CharField(max_length=120, widget=forms.TextInput(
-        attrs={'placeholder': 'Your name'}))
-    email = forms.EmailField(widget=forms.EmailInput(
-        attrs={'placeholder': 'you@example.com'}))
-    subject = forms.CharField(max_length=255, widget=forms.TextInput(
-        attrs={'placeholder': 'Subject'}))
-    message = forms.CharField(widget=forms.Textarea(
-        attrs={'rows': 6, 'placeholder': 'Your message'}))
+    name = forms.CharField(
+        max_length=120,
+        error_messages={"required": "Please enter your name."},
+        widget=forms.TextInput(
+            attrs={"placeholder": "Your name", "autocomplete": "name"}),
+    )
+    email = forms.EmailField(
+        error_messages={
+            "required": "Please enter your email address.",
+            "invalid": "Enter a valid email address, e.g. name@company.co.ke.",
+        },
+        widget=forms.EmailInput(
+            attrs={"placeholder": "you@example.com", "autocomplete": "email"}),
+    )
+    subject = forms.CharField(
+        max_length=255,
+        error_messages={"required": "Please enter a subject."},
+        widget=forms.TextInput(attrs={"placeholder": "Subject"}),
+    )
+    message = forms.CharField(
+        error_messages={"required": "Please write your message."},
+        widget=forms.Textarea(attrs={
+            "rows": 6,
+            "placeholder": "Your message",
+            "maxlength": str(CONTACT_MESSAGE_MAX),
+        }),
+    )
+    # Hidden trap for spam bots: real visitors never see or fill this in
+    fax_number = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={"tabindex": "-1", "autocomplete": "off"}),
+    )
+
+    def clean_name(self):
+        name = self.cleaned_data["name"]
+        if re.search(r"[\d_]", name) or re.search(r"[^\w\s.'’-]", name):
+            raise forms.ValidationError(
+                "Please enter your name using letters only, with no numbers or symbols."
+            )
+        if len(re.findall(r"[^\W\d_]", name)) < 2:
+            raise forms.ValidationError("Please enter your full name.")
+        return name
+
+    def clean_email(self):
+        return self.cleaned_data["email"].lower()
+
+    def clean_subject(self):
+        subject = self.cleaned_data["subject"]
+        if len(subject) < 3:
+            raise forms.ValidationError(
+                "Please enter a subject of at least 3 characters.")
+        return subject
+
+    def clean_message(self):
+        # Browsers count a line break as 1 character but send 2, so normalise first
+        text = self.cleaned_data["message"].replace("\r\n", "\n").strip()
+        if len(text) < CONTACT_MESSAGE_MIN:
+            raise forms.ValidationError(
+                f"Your message is too short. Please write at least {CONTACT_MESSAGE_MIN} "
+                "characters so we can help you properly."
+            )
+        if len(text) > CONTACT_MESSAGE_MAX:
+            raise forms.ValidationError(
+                f"Your message is {len(text):,} characters long. "
+                f"Please keep it to {CONTACT_MESSAGE_MAX:,} characters or fewer."
+            )
+        if _has_too_many_links(text):
+            raise forms.ValidationError(
+                f"Please remove some links. A message can contain at most {MAX_LINKS} links."
+            )
+        return text
+
+    def clean_fax_number(self):
+        if self.cleaned_data.get("fax_number"):
+            raise forms.ValidationError("This message could not be sent.")
+        return ""
+
+    # ---- highlight the invalid fields ----
+    def full_clean(self):
+        super().full_clean()
+        for name in self.errors:
+            if name in self.fields:
+                css = self.fields[name].widget.attrs.get("class", "")
+                self.fields[name].widget.attrs["class"] = (
+                    css + " is-invalid").strip()
 
 
 class JobApplicationForm(forms.Form):
-    name = forms.CharField(max_length=120, widget=forms.TextInput(
-        attrs={'placeholder': 'Your name'}))
-    email = forms.EmailField(widget=forms.EmailInput(
-        attrs={'placeholder': 'you@example.com'}))
-    phone = forms.CharField(max_length=30, required=False, widget=forms.TextInput(
-        attrs={'placeholder': 'Phone number (optional)'}))
-    message = forms.CharField(widget=forms.Textarea(
-        attrs={'rows': 6, 'placeholder': "Tell us why you're a good fit"}))
-    cv = forms.FileField(label='Upload CV (PDF or Word)', widget=forms.ClearableFileInput(
-        attrs={'accept': '.pdf,.doc,.docx'}))
+    name = forms.CharField(
+        min_length=2, max_length=120,
+        widget=forms.TextInput(
+            attrs={"class": "form-control", "autocomplete": "name"}),
+        error_messages={
+            "required": "Please enter your full name.",
+            "min_length": "Your name must be at least 2 characters.",
+            "max_length": "Your name must be 120 characters or fewer.",
+        },
+    )
+    email = forms.EmailField(
+        max_length=254,
+        widget=forms.EmailInput(
+            attrs={"class": "form-control", "autocomplete": "email"}),
+        error_messages={
+            "required": "Please enter your email address.",
+            "invalid": "Please enter a valid email address, e.g. name@example.com.",
+        },
+    )
+    phone = forms.CharField(
+        max_length=20,
+        widget=forms.TextInput(attrs={"class": "form-control", "autocomplete": "tel",
+                                      "placeholder": "e.g. 0712 345 678"}),
+        error_messages={
+            "required": "Please enter a phone number we can reach you on."},
+    )
+    message = forms.CharField(
+        min_length=20, max_length=2000,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 5}),
+        error_messages={
+            "required": "Please tell us a little about yourself.",
+            "min_length": "Please write at least 20 characters so we can get to know you.",
+            "max_length": "Please keep your message to 2,000 characters or fewer.",
+        },
+    )
+    cv = forms.FileField(
+        widget=forms.FileInput(
+            attrs={"class": "form-control", "accept": ".pdf,.doc,.docx"}),
+        error_messages={
+            "required": "Please attach your CV.",
+            "empty": "That file is empty. Please choose your CV again.",
+        },
+    )
+    # Hidden spam trap: real people never see or fill this
+    website = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={"autocomplete": "off", "tabindex": "-1"}),
+    )
+
+    def clean_name(self):
+        name = " ".join(self.cleaned_data["name"].split())
+        if not NAME_RE.match(name):
+            raise ValidationError(
+                "Your name can only contain letters, spaces, hyphens, apostrophes and full stops.")
+        return name
+
+    def clean_phone(self):
+        raw = self.cleaned_data["phone"]
+        phone = re.sub(r"[\s\-()]", "", raw)
+        if not PHONE_RE.match(phone):
+            raise ValidationError(
+                "Please enter a valid phone number: 9 to 15 digits, optionally starting with +, "
+                "e.g. 0712 345 678 or +254 712 345 678.")
+        return phone
+
+    def clean_message(self):
+        message = self.cleaned_data["message"].strip()
+        if len(LINK_RE.findall(message)) > MAX_LINKS:
+            raise ValidationError(
+                f"Please include no more than {MAX_LINKS} links in your message.")
+        return message
+
+    def clean_cv(self):
+        f = self.cleaned_data.get("cv")
+        if not f:
+            return f
+        ext = os.path.splitext(f.name)[1].lower()
+        if ext not in CV_SIGNATURES:
+            raise ValidationError(
+                "Your CV must be a PDF or Word document (.pdf, .doc or .docx).")
+        if f.size > CV_MAX_MB * 1024 * 1024:
+            raise ValidationError(
+                f"Your CV is {f.size / 1048576:.1f} MB. Please upload a file of "
+                f"{CV_MAX_MB} MB or less.")
+        head = f.read(8)
+        f.seek(0)
+        if not head.startswith(CV_SIGNATURES[ext]):
+            raise ValidationError(
+                f"This file doesn't look like a genuine {ext} document. "
+                "Please save or export your CV again and re-upload it.")
+        return f
+
+    def clean_website(self):
+        if self.cleaned_data.get("website"):
+            raise ValidationError(
+                "Your submission could not be sent. Please try again.")
+        return ""

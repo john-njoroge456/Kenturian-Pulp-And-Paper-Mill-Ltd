@@ -20,9 +20,7 @@
     <div class="application-form-wrap">
       {% if sent %}
         <div class="application-success-card text-center" data-aos="zoom-in">
-          <div class="success-check">
-            <i class="bi bi-check-lg"></i>
-          </div>
+          <div class="success-check"><i class="bi bi-check-lg"></i></div>
           <h3>CV received!</h3>
           <p>Thanks for your interest in Kenturian — we'll reach out if a matching role opens up.</p>
           <a href="{% url 'main:careers' %}" class="btn btn-arrow-circle btn-light-arrow mt-3">
@@ -31,44 +29,61 @@
         </div>
       {% else %}
         <div class="application-form-card" data-aos="fade-up">
-         
           <h3 class="text-center mb-4">Tell us about yourself</h3>
-          <form method="post" enctype="multipart/form-data" class="application-form">
+
+          {% if form.errors %}
+            <p class="form-error-note">Please fix the highlighted fields below and submit again.</p>
+          {% endif %}
+          {% for err in form.website.errors %}<div class="field-error">{{ err }}</div>{% endfor %}
+
+          <form method="post" enctype="multipart/form-data" class="application-form" novalidate>
             {% csrf_token %}
+
             <div>
               <label for="{{ form.name.id_for_label }}"><i class="bi bi-person"></i> Full Name</label>
               {{ form.name }}
+              {% for err in form.name.errors %}<div class="field-error">{{ err }}</div>{% endfor %}
             </div>
+
             <div>
               <label for="{{ form.email.id_for_label }}"><i class="bi bi-envelope"></i> Email</label>
               {{ form.email }}
+              {% for err in form.email.errors %}<div class="field-error">{{ err }}</div>{% endfor %}
             </div>
+
             <div>
               <label for="{{ form.phone.id_for_label }}"><i class="bi bi-telephone"></i> Phone</label>
               {{ form.phone }}
+              {% for err in form.phone.errors %}<div class="field-error">{{ err }}</div>{% endfor %}
             </div>
+
             <div>
               <label for="{{ form.message.id_for_label }}"><i class="bi bi-chat-left-text"></i> What role interests you?</label>
               {{ form.message }}
+              {% for err in form.message.errors %}<div class="field-error">{{ err }}</div>{% endfor %}
             </div>
+
             <div>
               <label for="{{ form.cv.id_for_label }}"><i class="bi bi-paperclip"></i> Upload CV</label>
               {{ form.cv }}
+              <small class="form-hint">PDF or Word (.pdf, .doc, .docx), max 5 MB.</small>
+              {% for err in form.cv.errors %}<div class="field-error">{{ err }}</div>{% endfor %}
             </div>
-            {% if form.errors %}
-              <p class="form-error-note">Please check the fields above and try again.</p>
-            {% endif %}
+
+            <div class="hp-field" aria-hidden="true">{{ form.website }}</div>
+
             <div class="text-center mt-4">
               <button type="submit" class="btn btn-arrow-circle btn-light-arrow">
-  Submit <i class="bi bi-arrow-up-right"></i>
-</button>
-<div class="text-center mt-4">
-  <a href="{% url 'main:careers' %}">&larr; Back to all vacancies</a>
-</div>
+                Submit <i class="bi bi-arrow-up-right"></i>
+              </button>
             </div>
           </form>
         </div>
       {% endif %}
+    </div>
+
+    <div class="text-center mt-4">
+      <a href="{% url 'main:careers' %}">&larr; Back to all vacancies</a>
     </div>
   </div>
 </section>

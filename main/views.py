@@ -1,3 +1,8 @@
+from .models import (
+    Product, NewsArticle, NewsCategory, NewsTag, GalleryImage,
+    JobPosting, EmployeeStory, LeadershipMember, ContactMessage, JobApplication
+)
+from .forms import ContactForm, JobApplicationForm
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.conf import settings
@@ -6,13 +11,11 @@ from django.utils.text import Truncator
 from django.core.paginator import Paginator
 from .models import OrderRequest
 from .forms import OrderRequestForm
+import logging
+import mimetypes
+import os
 
-from .forms import ContactForm, JobApplicationForm
-
-from .models import (
-    Product, NewsArticle, NewsCategory, NewsTag, GalleryImage,
-    JobPosting, EmployeeStory, LeadershipMember, ContactMessage, JobApplication
-)
+logger = logging.getLogger(__name__)
 
 
 def order_request_view(request):
@@ -158,61 +161,79 @@ def index(request):
     })
 
 
+def _process_application(form, job=None):
+    """Save a valid application, then email HR and the applicant.
+    Email failures are logged but never hide a saved application."""
+    cd = form.cleaned_data
+    record = JobApplication.objects.create(
+        job=job, name=cd["name"], email=cd["email"],
+        phone=cd["phone"], message=cd["message"], cv_file=cd["cv"],
+    )
+
+    if job:
+        subject = f"Job Application: {job.title} — {cd['name']} (Ref {record.reference})"
+    else:
+        subject = f"Speculative Application: {cd['name']} (Ref {record.reference})"
+    body = (
+        f"Reference: {record.reference}\n"
+        f"Applicant: {cd['name']}\n"
+        f"Email: {cd['email']}\n"
+        f"Phone: {cd['phone']}\n\n"
+        f"Message:\n{cd['message']}"
+    )
+    try:
+        hr_email = EmailMessage(subject, body, settings.DEFAULT_FROM_EMAIL,
+                                [settings.COMPANY_EMAIL])
+        # Re-open the saved file: the upload stream was already consumed by save()
+        filename = os.path.basename(record.cv_file.name)
+        content_type = mimetypes.guess_type(
+            filename)[0] or "application/octet-stream"
+        with record.cv_file.open("rb") as f:
+            hr_email.attach(filename, f.read(), content_type)
+        hr_email.send()
+    except Exception:
+        logger.exception("HR email failed for application %s",
+                         record.reference)
+
+    position_line = f"Position: {job.title}\n" if job else ""
+    intro = (f"Thanks for applying for {job.title}" if job
+             else "Thanks for your interest")
+    closing = ("Our team will review your application and reach out if it's a good fit."
+               if job else "We'll reach out if a matching opportunity opens up.")
+    client_message = (
+        f"Hi {cd['name']},\n\n"
+        f"{intro} — here's a copy for your records.\n\n"
+        f"Reference: {record.reference}\n"
+        f"{position_line}"
+        f"Phone: {cd['phone']}\n\n"
+        f"Your message:\n{cd['message']}\n\n"
+        f"{closing} Please quote reference {record.reference} in any follow-up.\n\n"
+        f"— Kenturian Pulp & Paper Mills Limited"
+    )
+    try:
+        send_mail(f"We've received your application — Ref {record.reference}",
+                  client_message, settings.DEFAULT_FROM_EMAIL, [cd["email"]])
+        record.client_email_sent = True
+        record.save(update_fields=["client_email_sent"])
+    except Exception:
+        logger.exception(
+            "Applicant email failed for application %s", record.reference)
+
+    return record
+
+
 def job_detail_view(request, pk):
     job = get_object_or_404(JobPosting, pk=pk, is_open=True)
     hero_image = GalleryImage.objects.filter(
         category='careers_hero').order_by('-uploaded_at').first()
-    sent = False
     if request.method == 'POST':
         form = JobApplicationForm(request.POST, request.FILES)
         if form.is_valid():
-            cd = form.cleaned_data
-            record = JobApplication.objects.create(
-                job=job, name=cd['name'], email=cd['email'],
-                phone=cd.get('phone', ''), message=cd['message'],
-                cv_file=cd['cv'],
-            )
-            subject = f"Job Application: {job.title} — {cd['name']} (Ref {record.reference})"
-            body = (
-                f"Reference: {record.reference}\n"
-                f"Applicant: {cd['name']}\n"
-                f"Email: {cd['email']}\n"
-                f"Phone: {cd.get('phone') or 'N/A'}\n\n"
-                f"Message:\n{cd['message']}"
-            )
-            email = EmailMessage(subject, body, settings.DEFAULT_FROM_EMAIL, [
-                                 settings.COMPANY_EMAIL])
-            cv_file = cd['cv']
-            email.attach(cv_file.name, cv_file.read(), cv_file.content_type)
-            try:
-                email.send()
-                sent = True
-
-                client_subject = f"We've received your application — Ref {record.reference}"
-                client_message = (
-                    f"Hi {cd['name']},\n\n"
-                    f"Thanks for applying for {job.title} — here's a copy for your records.\n\n"
-                    f"Reference: {record.reference}\n"
-                    f"Position: {job.title}\n"
-                    f"Phone: {cd.get('phone') or 'N/A'}\n\n"
-                    f"Your message:\n{cd['message']}\n\n"
-                    f"Our team will review your application and reach out if it's a good fit. "
-                    f"Please quote reference {record.reference} in any follow-up.\n\n"
-                    f"— Kenturian Pulp & Paper Mills Limited"
-                )
-                try:
-                    send_mail(client_subject, client_message, settings.DEFAULT_FROM_EMAIL, [
-                              cd['email']])
-                    record.client_email_sent = True
-                    record.save(update_fields=["client_email_sent"])
-                except Exception:
-                    pass
-
-                form = JobApplicationForm()
-            except Exception:
-                pass
+            _process_application(form, job=job)
+            return redirect(reverse('main:job_detail', args=[job.pk]) + '?sent=1')
     else:
         form = JobApplicationForm()
+    sent = request.GET.get('sent') == '1'
     return render(request, 'main/job_detail.html', {
         'job': job, 'form': form, 'sent': sent, 'hero_image': hero_image,
     })
@@ -221,56 +242,14 @@ def job_detail_view(request, pk):
 def general_application_view(request):
     hero_image = GalleryImage.objects.filter(
         category='careers_hero').order_by('-uploaded_at').first()
-    sent = False
     if request.method == 'POST':
         form = JobApplicationForm(request.POST, request.FILES)
         if form.is_valid():
-            cd = form.cleaned_data
-            record = JobApplication.objects.create(
-                job=None, name=cd['name'], email=cd['email'],
-                phone=cd.get('phone', ''), message=cd['message'],
-                cv_file=cd['cv'],
-            )
-            subject = f"Speculative Application: {cd['name']} (Ref {record.reference})"
-            body = (
-                f"Reference: {record.reference}\n"
-                f"Applicant: {cd['name']}\n"
-                f"Email: {cd['email']}\n"
-                f"Phone: {cd.get('phone') or 'N/A'}\n\n"
-                f"Message:\n{cd['message']}"
-            )
-            email = EmailMessage(subject, body, settings.DEFAULT_FROM_EMAIL, [
-                settings.COMPANY_EMAIL])
-            cv_file = cd['cv']
-            email.attach(cv_file.name, cv_file.read(), cv_file.content_type)
-            try:
-                email.send()
-                sent = True
-
-                client_subject = f"We've received your application — Ref {record.reference}"
-                client_message = (
-                    f"Hi {cd['name']},\n\n"
-                    f"Thanks for your interest — here's a copy for your records.\n\n"
-                    f"Reference: {record.reference}\n"
-                    f"Phone: {cd.get('phone') or 'N/A'}\n\n"
-                    f"Your message:\n{cd['message']}\n\n"
-                    f"We'll reach out if a matching opportunity opens up. "
-                    f"Please quote reference {record.reference} in any follow-up.\n\n"
-                    f"— Kenturian Pulp & Paper Mills Limited"
-                )
-                try:
-                    send_mail(client_subject, client_message, settings.DEFAULT_FROM_EMAIL, [
-                              cd['email']])
-                    record.client_email_sent = True
-                    record.save(update_fields=["client_email_sent"])
-                except Exception:
-                    pass
-
-                form = JobApplicationForm()
-            except Exception:
-                pass
+            _process_application(form)
+            return redirect(reverse('main:general_application') + '?sent=1')
     else:
         form = JobApplicationForm()
+    sent = request.GET.get('sent') == '1'
     return render(request, 'main/general_application.html', {
         'form': form, 'sent': sent, 'hero_image': hero_image,
     })

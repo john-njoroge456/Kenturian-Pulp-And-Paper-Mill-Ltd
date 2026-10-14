@@ -27,17 +27,29 @@
     </div>
     <h3 class="text-center mb-4">Send us a message</h3>
 
-    {% if sent %}
+        {% if sent %}
     <div class="application-success-card text-center" data-aos="zoom-in">
       <div class="success-check">
         <i class="bi bi-check-lg"></i>
       </div>
       <h3>Message Sent!</h3>
       <p class="mb-0">Thanks for reaching out — we'll get back to you shortly.</p>
+                        <div class="success-actions">
+        <a href="{% url 'main:index' %}" class="btn btn-navy">
+          <i class="bi bi-arrow-left"></i> Back to Home
+        </a>
+        <a href="{% url 'main:contact' %}" class="btn btn-order-pill">
+          <i class="bi bi-plus-lg"></i> Send Another Message
+        </a>
+      </div>
     </div>
     {% else %}
     <form method="post" novalidate class="application-form">
           {% csrf_token %}
+                    <div class="hp-field" aria-hidden="true">
+            <label for="{{ form.fax_number.id_for_label }}">Leave this field empty</label>
+            {{ form.fax_number }}
+          </div>
 
           <div>
             <label for="{{ form.name.id_for_label }}"><i class="bi bi-person"></i> Full Name</label>
@@ -123,4 +135,21 @@
 
   </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var box = document.getElementById('id_message');
+  if (!box) return;
+  var max = box.maxLength > 0 ? box.maxLength : 2000;
+  var counter = document.createElement('div');
+  counter.className = 'form-text text-end';
+  box.insertAdjacentElement('afterend', counter);
+  function update() { counter.textContent = box.value.length + ' / ' + max; }
+  box.addEventListener('input', update);
+  update();
+});
+</script>
 {% endblock %}

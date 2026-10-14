@@ -2528,3 +2528,25 @@ html:not(.js) .story-author { display: none; }
   font-weight: 600;
   margin-top: 0.35rem;
 }
+/* Spam trap: kept off-screen, not display:none, so bots still fill it in */
+.hp-field {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+/* Success-card action buttons: layout only, the buttons keep their own styles */
+.success-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+@media (max-width: 575px) {
+  .success-actions .btn { width: 100%; }
+}
+.field-error { color: #b42318; font-size: 0.875rem; margin-top: 0.3rem; }
+.form-hint { display: block; color: #6c757d; font-size: 0.8rem; margin-top: 0.3rem; }
