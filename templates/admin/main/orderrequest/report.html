@@ -9,7 +9,6 @@
   .rpt-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 20px; }
   .rpt-bar a.rpt-chip { padding:6px 12px; border-radius:999px; border:1px solid var(--hairline-color); text-decoration:none; color:var(--body-fg); }
   .rpt-bar a.rpt-chip.active { background:#14335c; border-color:#14335c; color:#fff; }
-  .rpt-bar form { display:flex; gap:6px; align-items:center; margin-left:auto; flex-wrap:wrap; }
   .rpt-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:14px; margin-bottom:22px; }
   .rpt-card { background:var(--darkened-bg); border-radius:10px; padding:14px 16px; }
   .rpt-card .lbl { font-size:12px; text-transform:uppercase; letter-spacing:.04em; opacity:.75; }
@@ -24,6 +23,13 @@
   .rpt-meter { height:7px; background:var(--hairline-color); border-radius:4px; overflow:hidden; min-width:80px; }
   .rpt-meter span { display:block; height:100%; background:#d9a441; }
   .rpt-empty { opacity:.7; padding:20px 0; }
+  .rpt-filters { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:-8px 0 18px; }
+  .rpt-filters select { max-width:220px; }
+  .rpt-wide { grid-column:1 / -1; }
+  .rpt-product td { font-weight:700; }
+  .rpt-colour td:first-child { padding-left:28px; opacity:.9; }
+  .rpt-colour .rpt-meter span { background:#14335c; opacity:.55; }
+  .rpt-sub { font-size:11px; opacity:.7; margin-left:6px; }
 </style>
 {% endblock %}
 
@@ -39,23 +45,51 @@
 {% block content %}
 <div id="content-main">
 
-  <!-- Period picker -->
+  <!-- Period chips -->
   <div class="rpt-bar">
     {% for key, label in presets %}
-      <a class="rpt-chip {% if preset == key %}active{% endif %}" href="?preset={{ key }}">{{ label }}</a>
+      <a class="rpt-chip {% if preset == key %}active{% endif %}"
+         href="?preset={{ key }}{% if filter_qs %}&{{ filter_qs }}{% endif %}">{{ label }}</a>
     {% endfor %}
-    <form method="get">
-      <input type="date" name="start" value="{{ report.start|date:'Y-m-d' }}">
-      <span>to</span>
-      <input type="date" name="end" value="{{ report.end|date:'Y-m-d' }}">
-      <input type="submit" value="Apply">
-      <a class="button" href="?start={{ report.start|date:'Y-m-d' }}&end={{ report.end|date:'Y-m-d' }}&export=xlsx">Download Excel</a>
-    </form>
+       <a class="button" style="margin-left:auto;"
+       href="?start={{ report.start|date:'Y-m-d' }}&end={{ report.end|date:'Y-m-d' }}{% if filter_qs %}&{{ filter_qs }}{% endif %}&export=orders">Download orders list</a>
+    <a class="button"
+       href="?start={{ report.start|date:'Y-m-d' }}&end={{ report.end|date:'Y-m-d' }}{% if filter_qs %}&{{ filter_qs }}{% endif %}&export=xlsx">Download full report</a>
   </div>
 
-  <p style="margin-top:-8px; opacity:.8;">
+  <!-- Dates + filters -->
+  <form method="get" class="rpt-filters">
+    <input type="date" name="start" value="{{ report.start|date:'Y-m-d' }}">
+    <span>to</span>
+    <input type="date" name="end" value="{{ report.end|date:'Y-m-d' }}">
+    <select name="client">
+      <option value="">All clients</option>
+      {% for c in report.client_options %}
+        <option value="{{ c }}" {% if c == report.client %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    <select name="product">
+      <option value="">All products</option>
+      {% for p in report.product_options %}
+        <option value="{{ p }}" {% if p == report.product %}selected{% endif %}>{{ p }}</option>
+      {% endfor %}
+    </select>
+    <select name="status">
+      <option value="">All statuses</option>
+      {% for code, label in report.status_options %}
+        <option value="{{ code }}" {% if code == report.status %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input type="submit" value="Apply">
+    {% if filter_qs %}
+      <a href="?start={{ report.start|date:'Y-m-d' }}&end={{ report.end|date:'Y-m-d' }}">Clear filters</a>
+    {% endif %}
+  </form>
+
+  <p style="margin-top:-6px; opacity:.8;">
     {{ report.start|date:"d M Y" }} – {{ report.end|date:"d M Y" }} ({{ report.days }} day{{ report.days|pluralize }}),
     compared with {{ report.prev_start|date:"d M Y" }} – {{ report.prev_end|date:"d M Y" }}.
+    <strong>{{ report.filters_text }}</strong>
   </p>
 
   {% if report.stale_new %}
@@ -96,24 +130,34 @@
   </div>
 
   {% if not report.order_count %}
-    <p class="rpt-empty">No orders in this period. Try a wider date range.</p>
+    <p class="rpt-empty">No orders match this period and these filters.</p>
   {% else %}
   <div class="rpt-grid">
 
-    <div class="module">
-      <h2>Quantity by product</h2>
+    <div class="module rpt-wide">
+      <h2>Quantity by product and colour</h2>
       <table class="rpt-table">
-        <thead><tr><th>Item</th><th class="num">kg</th><th></th><th class="num">Orders</th></tr></thead>
+        <thead><tr><th>Product / colour</th><th class="num">kg</th><th></th><th class="num">Lines</th><th class="num">Orders</th></tr></thead>
+        {% for p in report.by_product %}
         <tbody>
-        {% for r in report.by_product %}
-          <tr>
-            <td>{{ r.item_description }}</td>
-            <td class="num">{{ r.kg|intcomma }}</td>
-            <td><div class="rpt-meter"><span style="width:{{ r.share }}%"></span></div></td>
-            <td class="num">{{ r.orders }}</td>
+          <tr class="rpt-product">
+            <td>{{ p.item_description }}</td>
+            <td class="num">{{ p.kg|intcomma }}</td>
+            <td><div class="rpt-meter"><span style="width:{{ p.share }}%"></span></div></td>
+            <td class="num">{{ p.lines }}</td>
+            <td class="num">{{ p.orders }}</td>
           </tr>
-        {% endfor %}
+          {% for c in p.colours %}
+          <tr class="rpt-colour">
+            <td>↳ {{ c.color|default:"—" }}<span class="rpt-sub">{{ c.share_of_product }}% of product</span></td>
+            <td class="num">{{ c.kg|intcomma }}</td>
+            <td><div class="rpt-meter"><span style="width:{{ c.share_of_product }}%"></span></div></td>
+            <td class="num">{{ c.lines }}</td>
+            <td class="num">{{ c.orders }}</td>
+          </tr>
+          {% endfor %}
         </tbody>
+        {% endfor %}
       </table>
     </div>
 
@@ -128,23 +172,6 @@
             <td class="num">{{ r.orders }}</td>
             <td><div class="rpt-meter"><span style="width:{{ r.share }}%"></span></div></td>
             <td class="num">{{ r.kg|intcomma }}</td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="module">
-      <h2>Quantity by colour</h2>
-      <table class="rpt-table">
-        <thead><tr><th>Colour</th><th class="num">kg</th><th></th><th class="num">Lines</th></tr></thead>
-        <tbody>
-        {% for r in report.by_colour %}
-          <tr>
-            <td>{{ r.color|default:"—" }}</td>
-            <td class="num">{{ r.kg|intcomma }}</td>
-            <td><div class="rpt-meter"><span style="width:{{ r.share }}%"></span></div></td>
-            <td class="num">{{ r.lines }}</td>
           </tr>
         {% endfor %}
         </tbody>

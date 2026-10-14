@@ -1,3 +1,8 @@
+import os
+from urllib.parse import urlencode
+from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django.urls import path
 
 from django.contrib import admin
@@ -7,8 +12,8 @@ from django.core.exceptions import PermissionDenied
 from django.template.response import TemplateResponse
 from django.utils.html import format_html
 from .models import LeadershipMember
-from .reports import (orders_workbook, xlsx_response, PRESETS,
-                      resolve_period, build_order_report, report_workbook)
+from .reports import (orders_workbook, xlsx_response, PRESETS, resolve_period,
+                      build_order_report, report_workbook, applications_workbook)
 from .models import Product, NewsArticle, GalleryImage, JobPosting, EmployeeStory, NewsCategory, NewsTag, OrderRequest, OrderItem, OrderItemOption, ContactMessage, JobApplication
 
 
@@ -98,12 +103,23 @@ class OrderRequestAdmin(admin.ModelAdmin):
             raise PermissionDenied
 
         preset, start, end = resolve_period(request.GET)
-        report = build_order_report(start, end)
+        client = (request.GET.get("client") or "").strip()
+        product = (request.GET.get("product") or "").strip()
+        status = request.GET.get("status") or ""
+        if status not in dict(OrderRequest.STATUS_CHOICES):
+            status = ""
 
-        if request.GET.get("export") == "xlsx":
+        report = build_order_report(
+            start, end, client=client, product=product, status=status)
+        filter_qs = urlencode({k: v for k, v in
+                               (("client", client), ("product", product), ("status", status)) if v})
+        export = request.GET.get("export")
+        if export == "orders":
+            filename = f"kenturian-orders-{start:%Y%m%d}-{end:%Y%m%d}.xlsx"
+            return xlsx_response(orders_workbook(report["orders"], product=product), filename)
+        if export == "xlsx":
             filename = f"kenturian-order-report-{start:%Y%m%d}-{end:%Y%m%d}.xlsx"
             return xlsx_response(report_workbook(report), filename)
-
         context = {
             **self.admin_site.each_context(request),
             "opts": self.model._meta,
@@ -111,6 +127,7 @@ class OrderRequestAdmin(admin.ModelAdmin):
             "report": report,
             "preset": preset,
             "presets": PRESETS,
+            "filter_qs": filter_qs,
         }
         return TemplateResponse(request, "admin/main/orderrequest/report.html", context)
 
@@ -233,10 +250,60 @@ class ContactMessageAdmin(admin.ModelAdmin):
     readonly_fields = ("reference", "created_at")
 
 
+@admin.action(description="Export selected applications to Excel")
+def export_applications_xlsx(modeladmin, request, queryset):
+    filename = f"kenturian-applications-{timezone.localdate():%Y-%m-%d}.xlsx"
+    return xlsx_response(applications_workbook(queryset, request), filename)
+
+
 @admin.register(JobApplication)
 class JobApplicationAdmin(admin.ModelAdmin):
-    list_display = ("reference", "name", "job", "email",
-                    "client_email_sent", "created_at")
-    list_filter = ("job", "client_email_sent")
-    search_fields = ("reference", "name", "email")
-    readonly_fields = ("reference", "created_at")
+    list_display = ("reference", "name", "position", "status", "cv_link",
+                    "phone", "created_at")
+    list_filter = ("status", "job", "created_at")
+    list_editable = ("status",)
+    search_fields = ("reference", "name", "email", "phone")
+    date_hierarchy = "created_at"
+    actions = [export_applications_xlsx]
+    fields = ("reference", "created_at", "job", "name", "email", "phone",
+              "message", "cv_link", "status", "hr_notes", "client_email_sent")
+    readonly_fields = ("reference", "created_at", "job", "name", "email", "phone",
+                       "message", "cv_link", "client_email_sent")
+
+    def has_add_permission(self, request):
+        return False   # applications only come from the website
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("job")
+
+    @admin.display(description="Position", ordering="job__title")
+    def position(self, obj):
+        return obj.job.title if obj.job else "Speculative"
+
+    @admin.display(description="CV")
+    def cv_link(self, obj):
+        if not obj.cv_file:
+            return "—"
+        url = reverse("admin:main_jobapplication_cv", args=[obj.pk])
+        return format_html('<a href="{}">Download CV</a>', url)
+
+    def get_urls(self):
+        custom = [
+            path("<int:pk>/cv/", self.admin_site.admin_view(self.download_cv),
+                 name="main_jobapplication_cv"),
+        ]
+        return custom + super().get_urls()
+
+    def download_cv(self, request, pk):
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        application = get_object_or_404(JobApplication, pk=pk)
+        if not application.cv_file:
+            raise Http404
+        return FileResponse(application.cv_file.open("rb"), as_attachment=True,
+                            filename=os.path.basename(application.cv_file.name))
+
+
+admin.site.site_header = "Kenturian Pulp & Paper Mills Limited"
+admin.site.site_title = "Kenturian Admin"
+admin.site.index_title = "Staff dashboard"

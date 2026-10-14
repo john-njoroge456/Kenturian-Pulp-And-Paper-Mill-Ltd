@@ -350,6 +350,17 @@ class JobApplication(models.Model):
     phone = models.CharField(max_length=30, blank=True)
     message = models.TextField()
     cv_file = models.FileField(upload_to="applications/%Y/%m/")
+    STATUS_CHOICES = [
+        ("new", "New"),
+        ("shortlisted", "Shortlisted"),
+        ("interview", "Interview"),
+        ("rejected", "Not successful"),
+        ("hired", "Hired"),
+    ]
+    status = models.CharField(
+        max_length=12, choices=STATUS_CHOICES, default="new")
+    hr_notes = models.TextField(
+        blank=True, help_text="Internal notes — never shown to the applicant")
     client_email_sent = models.BooleanField(
         default=False, help_text="Whether the confirmation copy reached the applicant's email")
     created_at = models.DateTimeField(auto_now_add=True)
