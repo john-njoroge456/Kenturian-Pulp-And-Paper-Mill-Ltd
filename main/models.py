@@ -71,8 +71,33 @@ class OrderRequest(models.Model):
             self.reference = f"KPM-{uuid.uuid4().hex[:6].upper()}"
         super().save(*args, **kwargs)
 
+    @property
+    def total_quantity(self):
+        return sum(item.quantity for item in self.items.all())
+
     def __str__(self):
         return f"{self.reference} — {self.company_name}"
+
+
+class OrderItem(models.Model):
+    """One line on an order. An order can have up to 10 of these."""
+    order = models.ForeignKey(
+        OrderRequest, on_delete=models.CASCADE, related_name="items")
+    item_description = models.CharField(max_length=200)
+    color = models.CharField(max_length=100, blank=True)
+    length = models.DecimalField(
+        max_digits=10, decimal_places=2, help_text="Length in millimetres")
+    gsm = models.PositiveIntegerField(
+        help_text="Paper weight, grams per square metre")
+    quantity = models.PositiveIntegerField(
+        help_text="Quantity in kilograms (kg)")
+    position = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["position", "id"]
+
+    def __str__(self):
+        return f"{self.item_description} ({self.quantity} kg)"
 
 
 class Product(models.Model):

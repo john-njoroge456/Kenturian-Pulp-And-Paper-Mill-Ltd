@@ -2,19 +2,41 @@ from .models import LeadershipMember
 from django.contrib import admin
 
 from django.utils.html import format_html
-from .models import Product, NewsArticle, GalleryImage, JobPosting, EmployeeStory, NewsCategory, NewsTag, OrderRequest, OrderItemOption, ContactMessage, JobApplication
+from .models import Product, NewsArticle, GalleryImage, JobPosting, EmployeeStory, NewsCategory, NewsTag, OrderRequest, OrderItem, OrderItemOption, ContactMessage, JobApplication
+
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
+    fields = ("position", "item_description",
+              "color", "length", "gsm", "quantity")
+    ordering = ("position", "id")
 
 
 @admin.register(OrderRequest)
 class OrderRequestAdmin(admin.ModelAdmin):
-    list_display = ("reference", "company_name", "item_description",
-                    "color", "quantity", "status", "client_email_sent", "created_at")
-    list_filter = ("status", "item_description",
+    list_display = ("reference", "company_name", "item_count", "total_kg",
+                    "status", "client_email_sent", "created_at")
+    list_filter = ("status", "items__item_description",
                    "client_email_sent", "created_at")
-    search_fields = ("reference", "company_name",
-                     "contact_person", "email", "phone")
+    search_fields = ("reference", "company_name", "contact_person",
+                     "email", "phone", "items__item_description")
     readonly_fields = ("reference", "created_at")
     list_editable = ("status",)
+    inlines = [OrderItemInline]
+    # Old single-item fields, hidden now and removed in stage 2
+    exclude = ("item_description", "color", "length", "gsm", "quantity")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("items")
+
+    @admin.display(description="Items")
+    def item_count(self, obj):
+        return obj.items.count()
+
+    @admin.display(description="Total kg")
+    def total_kg(self, obj):
+        return obj.total_quantity
 
 
 @admin.register(OrderItemOption)
