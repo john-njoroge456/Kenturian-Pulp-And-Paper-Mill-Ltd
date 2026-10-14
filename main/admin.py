@@ -1,5 +1,8 @@
 from .models import LeadershipMember
 from django.contrib import admin
+from django.db.models import Count, Q, Sum
+from django.utils import timezone
+from .reports import orders_workbook, xlsx_response
 
 from django.utils.html import format_html
 from .models import Product, NewsArticle, GalleryImage, JobPosting, EmployeeStory, NewsCategory, NewsTag, OrderRequest, OrderItem, OrderItemOption, ContactMessage, JobApplication
@@ -13,17 +16,42 @@ class OrderItemInline(admin.TabularInline):
     ordering = ("position", "id")
 
 
+class HasLpoFilter(admin.SimpleListFilter):
+    title = "LPO attached"
+    parameter_name = "has_lpo"
+
+    def lookups(self, request, model_admin):
+        return (("yes", "Yes"), ("no", "No"))
+
+    def queryset(self, request, queryset):
+        no_lpo = Q(lpo_file="") | Q(lpo_file__isnull=True)
+        if self.value() == "yes":
+            return queryset.exclude(no_lpo)
+        if self.value() == "no":
+            return queryset.filter(no_lpo)
+        return queryset
+
+
+@admin.action(description="Export selected orders to Excel")
+def export_orders_xlsx(modeladmin, request, queryset):
+    filename = f"kenturian-orders-{timezone.localdate():%Y-%m-%d}.xlsx"
+    return xlsx_response(orders_workbook(queryset), filename)
+
+
 @admin.register(OrderRequest)
 class OrderRequestAdmin(admin.ModelAdmin):
     list_display = ("reference", "company_name", "item_count", "total_kg",
+                    "preferred_delivery_date", "delivery_location",
                     "status", "client_email_sent", "created_at")
-    list_filter = ("status", "items__item_description",
+    list_filter = ("status", "items__item_description", HasLpoFilter,
                    "client_email_sent", "created_at")
     search_fields = ("reference", "company_name", "contact_person",
                      "email", "phone", "items__item_description")
     readonly_fields = ("reference", "created_at")
     list_editable = ("status",)
+    date_hierarchy = "created_at"
     inlines = [OrderItemInline]
+    actions = [export_orders_xlsx]
 
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related("items")
@@ -34,7 +62,22 @@ class OrderRequestAdmin(admin.ModelAdmin):
 
     @admin.display(description="Total kg")
     def total_kg(self, obj):
-        return obj.total_quantity
+        return f"{obj.total_quantity:,}"
+
+    def changelist_view(self, request, extra_context=None):
+        response = super().changelist_view(request, extra_context=extra_context)
+        try:
+            qs = response.context_data["cl"].queryset
+        except (AttributeError, KeyError):
+            return response   # e.g. a redirect after saving
+        totals = OrderItem.objects.filter(order__in=qs.values("pk")).aggregate(
+            kg=Sum("quantity"), lines=Count("id"))
+        response.context_data["order_totals"] = {
+            "orders": qs.count(),
+            "lines": totals["lines"],
+            "kg": totals["kg"] or 0,
+        }
+        return response
 
 
 @admin.register(OrderItemOption)

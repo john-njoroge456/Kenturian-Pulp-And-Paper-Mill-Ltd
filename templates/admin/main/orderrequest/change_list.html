@@ -1,0 +1,14 @@
+{% extends "admin/change_list.html" %}
+{% load humanize %}
+
+{% block result_list %}
+  {{ block.super }}
+  {% if order_totals %}
+  <p style="margin:12px 0; padding:10px 14px; background:var(--darkened-bg); border-radius:6px; font-weight:600;">
+    {{ order_totals.orders|intcomma }} order{{ order_totals.orders|pluralize }}
+    · {{ order_totals.lines|intcomma }} item line{{ order_totals.lines|pluralize }}
+    · {{ order_totals.kg|intcomma }} kg total
+    <span style="font-weight:400; opacity:0.75;">(for the current filters)</span>
+  </p>
+  {% endif %}
+{% endblock %}
