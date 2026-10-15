@@ -2815,3 +2815,18 @@ body { overflow-x: clip; }
     margin-right: 0.6rem !important;
   }
 }
+/* ---- Phones: wider form fields (less padding inside the form card) ---- */
+@media (max-width: 575.98px) {
+  .application-form-wrap { padding-left: 0; padding-right: 0; }
+  .application-form-card { padding: 1.5rem 1.1rem; }
+}
+/* ---- Phones: shorter careers heroes + full "No file chosen" text ---- */
+@media (max-width: 575.98px) {
+  .page-hero-careers {
+    min-height: 0;
+    height: auto;
+    padding-bottom: 6rem;   /* was 3.5rem: room for the wave below the text */
+  }
+  .page-hero-careers .scroll-cue { display: none; }
+  .application-form input[type="file"] { font-size: 0.88rem; }
+}
