@@ -2637,7 +2637,7 @@ html:not(.js) .story-author { display: none; }
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255,255,255,0.95%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 /* ---- Phones: footer stats + WhatsApp button ---- */
-@media (max-width: 575.98px) {
+@media (max-width: 991.98px) {
   /* Footer stats: all three on one row instead of 2 + 1 */
   .footer-stats {
     display: grid;
@@ -2693,4 +2693,91 @@ html:not(.js) .story-author { display: none; }
     padding-left: calc(var(--bs-gutter-x) * 0.5) !important;
     padding-right: calc(var(--bs-gutter-x) * 0.5) !important;
   }
+}
+/* ---- Never allow sideways scrolling (AOS slide-ins were widening the page) ---- */
+html { overflow-x: hidden; }
+body { overflow-x: clip; }
+/* ---- Phones: big section headings + About values ---- */
+@media (max-width: 575.98px) {
+  .section-heading { font-size: clamp(1.9rem, 8vw, 2.4rem); line-height: 1.15; }
+
+  /* About page values (light cards): one per row */
+  .row:has(> [class*="col"] > .value-card-light) > [class*="col"] {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+/* ---- Phones: About hero badge sits below the text instead of over it ---- */
+@media (max-width: 575.98px) {
+  body .page-banner {
+    height: auto;
+    min-height: 0;
+    padding-bottom: 3.5rem;
+    flex-direction: column;      /* stack text, then badge */
+    align-items: center;
+    justify-content: center;
+  }
+  body .page-banner .banner-content {
+    width: 100%;
+    max-width: 100%;
+  }
+  body .page-banner .banner-badge {
+    position: relative;
+    top: auto; right: auto; bottom: auto; left: auto;
+    transform: none;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: max-content;
+    margin: 1.25rem auto 0;
+  }
+}
+/* ---- Tablets: values in 2 x 2 instead of 4 cramped columns ---- */
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .row:has(> [class*="col"] > .value-card-light) > [class*="col"],
+  .values-row > [class*="col"] {
+    flex: 0 0 50%;
+    max-width: 50%;
+    margin-bottom: 1.5rem;
+  }
+}
+/* ---- Tablets: directors one per row, photo left, details right ---- */
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .leadership-section .row > [class*="col"]:has(> .leadership-card) {
+    flex: 0 0 100%;
+    max-width: 100%;
+    margin-bottom: 1.5rem;
+  }
+
+  .leadership-section .leadership-card {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    column-gap: 1.75rem;
+    align-items: start;
+    text-align: left;
+    height: auto;
+  }
+
+  .leadership-section .leadership-photo {
+    grid-column: 1;
+    grid-row: 1 / span 4;
+    width: 150px;
+    height: 150px;
+    margin: 0;
+  }
+
+  .leadership-section .leadership-name,
+  .leadership-section .leadership-qualifications,
+  .leadership-section .leadership-title,
+  .leadership-section .leadership-bio {
+    grid-column: 2;
+    text-align: left;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .leadership-section .leadership-name { margin-top: 0.25rem; }
+  .leadership-section .leadership-qualifications { justify-self: start; }
+  .leadership-section .leadership-title { margin-bottom: 0.75rem; }
 }
