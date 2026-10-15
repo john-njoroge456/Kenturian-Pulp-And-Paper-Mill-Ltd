@@ -2820,35 +2820,16 @@ body { overflow-x: clip; }
   .application-form-wrap { padding-left: 0; padding-right: 0; }
   .application-form-card { padding: 1.5rem 1.1rem; }
 }
-/* ---- Phones: shorter careers heroes + full "No file chosen" text ---- */
+/* ---- Phones: contact hero title readable over the signage ---- */
 @media (max-width: 575.98px) {
-  .page-hero-careers {
-    min-height: 0;
-    height: auto;
-    padding-bottom: 6rem;   /* was 3.5rem: room for the wave below the text */
-  }
-  .page-hero-careers .scroll-cue { display: none; }
-  .application-form input[type="file"] { font-size: 0.88rem; }
-}
-/* ---- Related News: wider cards on tablets, centred, no mid-word breaks ---- */
-.related-news-section .row { justify-content: center; }   /* 1 or 2 cards sit centred, not left */
-.related-news-section .card-title,
-.related-news-section h5 {
-  word-break: normal;
-  overflow-wrap: normal;
-  hyphens: auto;
-}
-@media (min-width: 576px) and (max-width: 991.98px) {
-  .related-news-section .row > [class*="col"] {
-    flex: 0 0 50%;
-    max-width: 50%;
-  }
-}
-/* ---- Phones: related news card uses the available width ---- */
-@media (max-width: 575.98px) {
-  .related-news-section { padding: 1.25rem 0.75rem; }
-  .related-news-section .row > [class*="col"] {
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
+  .hero-contact .hero-title {
+    display: inline-block;
+    font-size: 2.2rem;
+    padding: 0.15rem 1rem 0.3rem;
+    border-radius: 12px;
+    background: rgba(12, 28, 52, 0.6);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+    position: relative;
+    z-index: 2;
   }
 }
