@@ -76,3 +76,57 @@ h3.section-title { margin-bottom: 1rem; }
 @media (min-width: 768px) {
   .carousel-image { height: 520px !important; }
 }
+/* ---- Phones: hero caption + values ---- */
+@media (max-width: 575.98px) {
+  /* Hero: centred, full-width caption, text sized for phones */
+  .hero-caption {
+    left: 0;
+    right: 0;
+    width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    text-align: center;
+  }
+  .hero-caption-inner {
+    width: 100%;
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0.9rem 1rem;
+  }
+  .hero-caption h1,
+  .hero-caption h2 { font-size: 1.6rem; line-height: 1.25; }
+  .hero-caption .lead { font-size: 1.05rem; line-height: 1.5; }
+
+  /* Hero arrows were sitting on top of the text: swipe and the dots still work */
+  #heroCarousel .carousel-control-prev,
+  #heroCarousel .carousel-control-next { display: none; }
+
+  /* Our Values: one value per row instead of two cramped columns */
+  .values-row > [class*="col"] {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  .values-row > [class*="col"] + [class*="col"] { margin-top: 1.25rem; }
+}
+/* ---- News cards: equal heights, tidy text ---- */
+.news-card { height: 100%; }
+
+.news-card-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;          /* max 3 lines, then "…" */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.news-card-excerpt {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;          /* max 4 lines, then "…" */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Tablets: three cards side by side, so slightly smaller titles */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .news-card-title { font-size: 1.05rem; line-height: 1.3; }
+  .news-card-excerpt { font-size: 0.9rem; }
+}
