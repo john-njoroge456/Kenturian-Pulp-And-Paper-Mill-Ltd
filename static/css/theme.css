@@ -2659,27 +2659,7 @@ html:not(.js) .story-author { display: none; }
   .whatsapp-bubble i { font-size: 1.5rem; }
   .whatsapp-tooltip { display: none; }
 }
-/* ---- Compact brand name on phones ---- */
-.brand-mobile { display: none; }
-@media (max-width: 767.98px) {
-  .brand-mobile {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.1;
-    color: #fff;
-  }
-  .brand-mobile strong {
-    font-size: 1.05rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  .brand-mobile small {
-    font-size: 0.72rem;
-    color: #d9a441;
-    letter-spacing: 0.02em;
-  }
-}
+
 /* ---- Footer: long emails wrap instead of spilling into the next column ---- */
 .footer-link[href^="mailto:"] { overflow-wrap: anywhere; }
 
@@ -2780,4 +2760,58 @@ body { overflow-x: clip; }
   .leadership-section .leadership-name { margin-top: 0.25rem; }
   .leadership-section .leadership-qualifications { justify-self: start; }
   .leadership-section .leadership-title { margin-bottom: 0.75rem; }
+}/* ---- Phones: employee stories show one full-width card, no side slivers ---- */
+@media (max-width: 991.98px) {
+  .stories-track {
+    transform: none !important;   /* ignore the JavaScript slide offset */
+    width: 100%;                  /* was max-content: kept the text on one line */
+    justify-content: center;
+  }
+  .story-slot:not(.story-slot-active) { display: none; }
+    .story-slot-active {
+    flex: 0 0 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    min-height: 0;
+    padding: 2.75rem 1.5rem 2rem;
+  }
+  .story-slot-active .story-slot-text {
+    display: block;               /* show the whole quote, no line limit */
+    width: 100%;
+    overflow: visible;
+  }
+}
+/* ---- Full company name on two lines below 1200px ---- */
+.brand-compact {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.95rem;
+}
+@media (min-width: 1200px) {
+  .brand-compact { display: none; }     /* full single-line name + tagline take over */
+}
+@media (max-width: 399.98px) {
+  .brand-compact { font-size: 0.8rem; } /* smallest phones */
+}
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  .navbar-custom .btn { white-space: nowrap; }   /* keep "Order Now" / "Contact Us" on one line */
+}
+/* ---- Phones: keep crest + name + menu button on one row ---- */
+@media (max-width: 575.98px) {
+  .navbar-custom .navbar-brand {
+    white-space: normal;      /* Bootstrap's nowrap stopped the name from fitting */
+    min-width: 0;
+    flex: 1 1 auto;
+    margin-right: 0.5rem;
+  }
+  .navbar-custom .site-logo {
+    height: 44px;
+    width: auto;
+    margin-right: 0.6rem !important;
+  }
 }

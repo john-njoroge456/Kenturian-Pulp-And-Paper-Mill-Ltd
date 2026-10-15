@@ -151,13 +151,24 @@ document.addEventListener('DOMContentLoaded', function () {
   const slots = Array.from(track.querySelectorAll('.story-slot'));
   const nameEl = document.getElementById('storyAuthorName');
   const roleEl = document.getElementById('storyAuthorRole');
+  // Measure the real card width, gap and visible width, so the active card is always centred
+  function metrics() {
+    const w = slots[2].offsetWidth;
+    const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+    const visible = track.parentElement.clientWidth;
+    const pitch = w + gap;
+    return { pitch: pitch, rest: visible / 2 - (2 * pitch + w / 2) };
+  }
 
-  const SLOT_WIDTH = 400;
-  const SLOT_GAP = 32;
-  const PITCH = SLOT_WIDTH + SLOT_GAP;
+  // Position the track: 0 = active card centred, -1 = slid one card left, +1 = one card right
+  function place(shift, animate) {
+    const m = metrics();
+    track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.4,0,0.2,1)' : 'none';
+    track.style.transform = 'translateX(' + (m.rest + shift * m.pitch) + 'px)';
+  }
 
   function mod(n, m) { return ((n % m) + m) % m; }
-  function isMobile() { return window.matchMedia('(max-width: 767px)').matches; }
+   function isMobile() { return window.matchMedia('(max-width: 991.98px)').matches; }
 
   function render() {
     slots.forEach(function (slot, i) {
@@ -170,26 +181,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function next() {
     if (isMobile()) { baseIndex = mod(baseIndex + 1, N); render(); return; }
-    track.style.transition = 'transform 0.5s cubic-bezier(0.4,0,0.2,1)';
-    track.style.transform = 'translateX(' + (-2 * PITCH) + 'px)';
+    place(-1, true);
     setTimeout(function () {
       baseIndex = mod(baseIndex + 1, N);
       render();
-      track.style.transition = 'none';
-      track.style.transform = 'translateX(' + (-PITCH) + 'px)';
+      place(0, false);
       void track.offsetWidth;
     }, 500);
   }
 
   function prev() {
     if (isMobile()) { baseIndex = mod(baseIndex - 1, N); render(); return; }
-    track.style.transition = 'transform 0.5s cubic-bezier(0.4,0,0.2,1)';
-    track.style.transform = 'translateX(0px)';
+    place(1, true);
     setTimeout(function () {
       baseIndex = mod(baseIndex - 1, N);
       render();
-      track.style.transition = 'none';
-      track.style.transform = 'translateX(' + (-PITCH) + 'px)';
+      place(0, false);
       void track.offsetWidth;
     }, 500);
   }
@@ -240,7 +247,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  track.style.transform = 'translateX(' + (-PITCH) + 'px)';
+  if (!isMobile()) place(0, false);
+  window.addEventListener('resize', function () { if (!isMobile()) place(0, false); });
   render();
   schedule();
 });
