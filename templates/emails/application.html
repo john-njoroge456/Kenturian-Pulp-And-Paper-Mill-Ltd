@@ -1,0 +1,39 @@
+{% extends "emails/base_email.html" %}
+
+{% block subtitle %}{% if for_client %}Application received{% elif job %}New job application{% else %}New CV (speculative){% endif %} &middot; {{ application.reference }}{% endblock %}
+
+{% block content %}
+  {% if for_client %}
+    <p style="margin-top:0;">Hi {{ application.name }},</p>
+    <p>{% if job %}Thanks for applying for <strong>{{ job.title }}</strong>.{% else %}Thanks for your interest in working with us.{% endif %} Here's a copy for your records.</p>
+  {% else %}
+    <p style="margin-top:0;"><strong>{{ application.name }}</strong> {% if job %}applied for <strong>{{ job.title }}</strong>{% else %}sent a speculative CV{% endif %}.</p>
+  {% endif %}
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;margin:16px 0;">
+    <tr><td style="padding:3px 0;color:#6b7280;width:120px;">Reference</td><td><strong>{{ application.reference }}</strong></td></tr>
+    <tr><td style="padding:3px 0;color:#6b7280;">Position</td><td>{% if job %}{{ job.title }}{% else %}Speculative (any suitable role){% endif %}</td></tr>
+    {% if not for_client %}
+    <tr><td style="padding:3px 0;color:#6b7280;">Name</td><td>{{ application.name }}</td></tr>
+    <tr><td style="padding:3px 0;color:#6b7280;">Email</td><td>{{ application.email }}</td></tr>
+    {% endif %}
+    <tr><td style="padding:3px 0;color:#6b7280;">Phone</td><td>{{ application.phone|default:"—" }}</td></tr>
+    {% if not for_client %}
+    <tr><td style="padding:3px 0;color:#6b7280;">CV</td><td>Attached to this email</td></tr>
+    {% endif %}
+  </table>
+
+  <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">{% if for_client %}Your message{% else %}Message from the applicant{% endif %}</div>
+  <div style="background:#f7f8fa;border-left:3px solid #d9a441;border-radius:6px;padding:12px 14px;font-size:14px;">
+    {{ application.message|linebreaksbr }}
+  </div>
+
+  {% if for_client %}
+    <p style="margin-bottom:0;">
+      {% if job %}Our team will review your application and reach out if it's a good fit.{% else %}We'll reach out if a matching opportunity opens up.{% endif %}
+      Please quote reference <strong>{{ application.reference }}</strong> in any follow-up.
+    </p>
+  {% else %}
+    <p style="margin-bottom:0;color:#6b7280;font-size:12px;">Reply to this email to respond to {{ application.name }} directly.</p>
+  {% endif %}
+{% endblock %}

@@ -106,7 +106,7 @@ class OrderRequestForm(forms.ModelForm):
             }),
         }
         labels = {
-            "lpo_file": "Attach LPO (optional: PDF, JPG, PNG or Word, max 5 MB)",
+            "lpo_file": "Attach LPO (optional: PDF, JPG, PNG or Word, max 10 MB)",
         }
 
     def __init__(self, *args, **kwargs):

@@ -126,7 +126,8 @@ EMAIL_BACKEND = os.environ.get(
     'EMAIL_BACKEND',
     'django.core.mail.backends.smtp.EmailBackend' if EMAIL_HOST_PASSWORD
     else 'django.core.mail.backends.console.EmailBackend')
-DEFAULT_FROM_EMAIL = COMPANY_EMAIL
+DEFAULT_FROM_EMAIL = f"{COMPANY_NAME} <{COMPANY_EMAIL}>"
+EMAIL_TIMEOUT = 15  # don't let a slow mail server freeze the page
 
 AUTH_PASSWORD_VALIDATORS = [
     {

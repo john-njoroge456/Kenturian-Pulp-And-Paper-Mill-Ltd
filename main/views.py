@@ -5,7 +5,7 @@ from django.template.loader import render_to_string
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.conf import settings
-from django.core.mail import send_mail, EmailMessage
+from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives
 from django.utils.text import Truncator
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -58,7 +58,8 @@ def order_request_view(request):
                 "emails/order_summary.html", {**email_ctx, "for_client": False})
             html_client = render_to_string(
                 "emails/order_summary.html", {**email_ctx, "for_client": True})
-            subject = f"New order request {order.reference} — {order.company_name}"
+            subject = (f"New order request — {order.company_name} — "
+                       f"{len(items)} item{'s' if len(items) != 1 else ''} (Ref {order.reference})")
             message = (
                 f"Reference: {order.reference}\n"
                 f"Items ({len(items)}):\n{item_lines}\n"
@@ -70,11 +71,20 @@ def order_request_view(request):
                 f"LPO attached: {'Yes' if order.lpo_file else 'No'}"
             )
             try:
-                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL,
-                          [settings.COMPANY_EMAIL], html_message=html_company)
+                staff_email = EmailMultiAlternatives(
+                    subject, message, settings.DEFAULT_FROM_EMAIL,
+                    [settings.COMPANY_EMAIL], reply_to=[order.email])
+                staff_email.attach_alternative(html_company, "text/html")
+                if order.lpo_file:
+                    lpo_name = os.path.basename(order.lpo_file.name)
+                    lpo_type = mimetypes.guess_type(
+                        lpo_name)[0] or "application/octet-stream"
+                    with order.lpo_file.open("rb") as f:
+                        staff_email.attach(lpo_name, f.read(), lpo_type)
+                staff_email.send()
             except Exception:
-                pass
-
+                logger.exception(
+                    "Staff email failed for order %s", order.reference)
             client_subject = f"Your order request {order.reference} — Kenturian Pulp & Paper Mills Limited"
             client_message = (
                 f"Hi {order.contact_person},\n\n"
@@ -209,9 +219,9 @@ def _process_application(form, job=None):
     )
 
     if job:
-        subject = f"Job Application: {job.title} — {cd['name']} (Ref {record.reference})"
+        subject = f"New job application — {job.title} — {cd['name']} (Ref {record.reference})"
     else:
-        subject = f"Speculative Application: {cd['name']} (Ref {record.reference})"
+        subject = f"New CV (speculative) — {cd['name']} (Ref {record.reference})"
     body = (
         f"Reference: {record.reference}\n"
         f"Applicant: {cd['name']}\n"
@@ -219,9 +229,15 @@ def _process_application(form, job=None):
         f"Phone: {cd['phone']}\n\n"
         f"Message:\n{cd['message']}"
     )
+    email_ctx = {"application": record, "job": job}
+    html_staff = render_to_string(
+        "emails/application.html", {**email_ctx, "for_client": False})
+    html_client = render_to_string(
+        "emails/application.html", {**email_ctx, "for_client": True})
     try:
-        hr_email = EmailMessage(subject, body, settings.DEFAULT_FROM_EMAIL,
-                                [settings.COMPANY_EMAIL])
+        hr_email = EmailMultiAlternatives(subject, body, settings.DEFAULT_FROM_EMAIL,
+                                          [settings.COMPANY_EMAIL], reply_to=[cd["email"]])
+        hr_email.attach_alternative(html_staff, "text/html")
         # Re-open the saved file: the upload stream was already consumed by save()
         filename = os.path.basename(record.cv_file.name)
         content_type = mimetypes.guess_type(
@@ -250,7 +266,8 @@ def _process_application(form, job=None):
     )
     try:
         send_mail(f"We've received your application — Ref {record.reference}",
-                  client_message, settings.DEFAULT_FROM_EMAIL, [cd["email"]])
+                  client_message, settings.DEFAULT_FROM_EMAIL, [cd["email"]],
+                  html_message=html_client)
         record.client_email_sent = True
         record.save(update_fields=["client_email_sent"])
     except Exception:
@@ -309,13 +326,21 @@ def contact_view(request):
                 name=cd['name'], email=cd['email'],
                 subject=cd['subject'], message=cd['message'],
             )
-            subject = f"Website contact: {cd['subject']}"
+            subject = f"New enquiry from {cd['name']} — {cd['subject']} (Ref {record.reference})"
             message = f"Reference: {record.reference}\nFrom: {cd['name']} <{cd['email']}>\n\n{cd['message']}"
+            html_staff = render_to_string(
+                "emails/contact_message.html", {"record": record, "for_client": False})
+            html_client = render_to_string(
+                "emails/contact_message.html", {"record": record, "for_client": True})
             try:
-                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [
-                          settings.COMPANY_EMAIL])
+                staff_email = EmailMultiAlternatives(
+                    subject, message, settings.DEFAULT_FROM_EMAIL,
+                    [settings.COMPANY_EMAIL], reply_to=[cd['email']])
+                staff_email.attach_alternative(html_staff, "text/html")
+                staff_email.send()
             except Exception:
-                pass
+                logger.exception(
+                    "Staff email failed for contact %s", record.reference)
 
             client_subject = f"We've received your message — Ref {record.reference}"
             client_message = (
@@ -329,8 +354,8 @@ def contact_view(request):
                 f"— Kenturian Pulp & Paper Mills Limited"
             )
             try:
-                send_mail(client_subject, client_message, settings.DEFAULT_FROM_EMAIL, [
-                          cd['email']])
+                send_mail(client_subject, client_message, settings.DEFAULT_FROM_EMAIL,
+                          [cd['email']], html_message=html_client)
                 record.client_email_sent = True
                 record.save(update_fields=["client_email_sent"])
             except Exception:

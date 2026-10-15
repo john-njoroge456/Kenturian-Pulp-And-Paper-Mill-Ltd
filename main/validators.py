@@ -22,8 +22,8 @@ def validate_upload(uploaded, allowed=(".pdf", ".jpg", ".jpeg", ".png", ".doc", 
         raise ValidationError(
             f"'{uploaded.name}' is not an accepted file type. Please upload one of: {nice}."
         )
-    if uploaded.size > max_mb * 1024 * 1024:
-        size_mb = uploaded.size / (1024 * 1024)
+    if uploaded.size > max_mb * 1_000_000:
+        size_mb = uploaded.size / 1_000_000
         raise ValidationError(
             f"'{uploaded.name}' is {size_mb:.1f} MB. The maximum is {max_mb} MB, "
             "so please compress the file or upload a smaller one."

@@ -121,7 +121,7 @@
 
           <hr class="my-4">
 
-          <label for="id_lpo_file"><i class="bi bi-paperclip"></i> Attach LPO (optional: PDF, JPG, PNG or Word, max 5 MB)</label>
+          <label for="id_lpo_file"><i class="bi bi-paperclip"></i> Attach LPO (optional: PDF, JPG, PNG or Word, max 10 MB)</label>
           {{ form.lpo_file }}
           {{ form.lpo_file.errors }}
 
@@ -483,8 +483,8 @@ document.addEventListener('DOMContentLoaded', function () {
       if (allowed.indexOf(ext) === -1) {
         fileMsg.textContent = "'" + f.name + "' is not an accepted file type. Please upload a PDF, JPG, PNG or Word file.";
         lpo.value = '';
-      } else if (f.size > 5 * 1024 * 1024) {
-        fileMsg.textContent = "'" + f.name + "' is " + (f.size / 1048576).toFixed(1) + ' MB. The maximum is 5 MB, so please compress it or upload a smaller file.';
+      } else if (f.size > 10000000) {
+        fileMsg.textContent = "'" + f.name + "' is " + (f.size / 1000000).toFixed(1) + ' MB. The maximum is 10 MB, so please compress it or upload a smaller file.';
         lpo.value = '';
       }
     });
