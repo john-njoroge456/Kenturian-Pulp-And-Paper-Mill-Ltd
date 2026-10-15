@@ -2830,3 +2830,25 @@ body { overflow-x: clip; }
   .page-hero-careers .scroll-cue { display: none; }
   .application-form input[type="file"] { font-size: 0.88rem; }
 }
+/* ---- Related News: wider cards on tablets, centred, no mid-word breaks ---- */
+.related-news-section .row { justify-content: center; }   /* 1 or 2 cards sit centred, not left */
+.related-news-section .card-title,
+.related-news-section h5 {
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: auto;
+}
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .related-news-section .row > [class*="col"] {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}
+/* ---- Phones: related news card uses the available width ---- */
+@media (max-width: 575.98px) {
+  .related-news-section { padding: 1.25rem 0.75rem; }
+  .related-news-section .row > [class*="col"] {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+}
