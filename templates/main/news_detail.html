@@ -79,3 +79,6 @@
   </div>
 </section>
 {% endblock %}
+{% block og_title %}{{ article.title }}{% endblock %}
+{% block og_description %}{{ article.excerpt|default:article.body|striptags|truncatechars:150 }}{% endblock %}
+{% block meta_description %}{{ article.excerpt|default:article.body|striptags|truncatechars:150 }}{% endblock %}

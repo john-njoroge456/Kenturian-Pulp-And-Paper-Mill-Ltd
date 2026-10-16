@@ -111,6 +111,8 @@ COMPANY_WEBSITE = os.environ.get('COMPANY_WEBSITE', 'kenturian.co.ke')
 # place your logo at static/images/logo.svg
 LOGO_STATIC = os.environ.get('LOGO_STATIC', 'images/logo.svg')
 COMPANY_PHONE = os.environ.get('COMPANY_PHONE', '+254720044513')
+# Admin address: keep it unguessable; can be changed on the server via ADMIN_URL
+ADMIN_URL = os.environ.get('ADMIN_URL', 'admin/').strip('/') + '/'
 
 # E.164 without the + for wa.me links
 FOOTER_WHATSAPP = os.environ.get('FOOTER_WHATSAPP', '254795979982')
