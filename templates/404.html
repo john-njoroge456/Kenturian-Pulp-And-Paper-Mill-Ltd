@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Page not found — {{ COMPANY_NAME }}{% endblock %}
+
+{% block hero %}
+<div class="page-hero-navy">
+  <div class="page-hero-navy-content">
+    <span class="hero-accent-line mx-auto"></span>
+    <h1 class="hero-title">Page not found</h1>
+    <p class="lead mb-0">The page you're looking for has moved or doesn't exist.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="section-block section-block-tight-top text-center">
+  <p class="mb-4" style="color:#555;">Try one of these instead:</p>
+  <div class="d-flex flex-wrap justify-content-center gap-3">
+    <a href="{% url 'main:index' %}" class="btn btn-navy-arrow"><i class="bi bi-house me-1"></i> Home</a>
+    <a href="{% url 'main:order' %}" class="btn btn-order-pill"><i class="bi bi-cart me-1"></i> Place an Order</a>
+    <a href="{% url 'main:contact' %}" class="btn btn-outline-navy"><i class="bi bi-envelope me-1"></i> Contact Us</a>
+  </div>
+</div>
+{% endblock %}
