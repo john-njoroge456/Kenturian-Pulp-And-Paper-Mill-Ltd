@@ -2833,3 +2833,25 @@ body { overflow-x: clip; }
     z-index: 2;
   }
 }
+/* ---- Phones: order form item header, length/GSM, success total ---- */
+@media (max-width: 575.98px) {
+  /* 1. Item header on one line: hide the EDITING tag, icon-only Remove, compact Save */
+  .order-item-head { flex-wrap: nowrap; gap: 0.5rem; }
+  .order-item-title { white-space: nowrap; }
+  .order-item-editing { display: none; }
+  .order-item-head-actions .btn-remove-item { font-size: 0; padding: 0.35rem 0.5rem; }
+  .order-item-head-actions .btn-remove-item i { font-size: 1rem; }
+  .btn-done-item { white-space: nowrap; padding: 0.35rem 0.85rem; }
+
+  /* 2. Length and GSM full width, one under the other */
+  .order-item-body .row > .col-6 { flex: 0 0 100%; max-width: 100%; }
+
+  /* 3. Success page: "Total · 2 items" and the kg on one line */
+  .order-items-table tfoot tr {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.6rem;
+  }
+  .order-items-table tfoot td { display: block; border: none; padding: 0; }
+}

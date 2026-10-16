@@ -401,7 +401,11 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     var opener = e.target.closest('[data-open-item]');
-    if (opener) openRow(opener.closest('[data-item-row]'));
+    if (opener) {
+      var openedRow = opener.closest('[data-item-row]');
+      openRow(openedRow);
+      openedRow.querySelector('.item-description').focus({ preventScroll: true });
+    }
   });
 
   list.addEventListener('keydown', function (e) {
@@ -411,16 +415,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  list.addEventListener('focusout', function () {
-    setTimeout(function () {
-      if (list.contains(document.activeElement)) return;
-      rows().forEach(function (row) {
-        if (!row.classList.contains('is-collapsed') && rowComplete(row)) {
-          row.classList.add('is-collapsed');
-        }
-      });
-      updateRecap();
-    }, 0);
+    // Fold complete items only when focus moves to a field outside the items
+  // (e.g. Company Name). A hidden Edit button losing focus must not count.
+  list.addEventListener('focusout', function (e) {
+    var to = e.relatedTarget;
+    if (!to || list.contains(to)) return;
+    rows().forEach(function (row) {
+      if (!row.classList.contains('is-collapsed') && rowComplete(row)) {
+        row.classList.add('is-collapsed');
+      }
+    });
+    updateRecap();
   });
 
   // setTimeout lets the error-clearing code run first, so red flags update correctly
