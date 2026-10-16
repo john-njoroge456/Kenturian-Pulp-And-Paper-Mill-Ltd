@@ -188,3 +188,29 @@ if os.environ.get('SECURE_SSL', 'False') == 'True':
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 3600  # raise to 31536000 once everything works
+# ---- Logging: warnings and errors go to logs/django.log ----
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {'format': '{asctime} [{levelname}] {name}: {message}', 'style': '{'},
+    },
+    'handlers': {
+        'file': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_DIR / 'django.log',
+            'maxBytes': 5 * 1024 * 1024,   # 5 MB per file
+            'backupCount': 5,              # keep the last 5 files
+            'formatter': 'standard',
+        },
+        'console': {'class': 'logging.StreamHandler', 'formatter': 'standard'},
+    },
+    'loggers': {
+        'django': {'handlers': ['file', 'console'], 'level': 'WARNING', 'propagate': False},
+        'main': {'handlers': ['file', 'console'], 'level': 'WARNING', 'propagate': False},
+    },
+}
