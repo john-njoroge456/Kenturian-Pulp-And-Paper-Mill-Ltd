@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ article.title }}{% endblock %}
+{% block title %}{{ article.title }} — {{ COMPANY_NAME }}{% endblock %}
 
 {% block hero %}
 <div class="page-hero-navy hero-bg-animated" style="--hero-bg-url: url('{% if article.featured_image %}{{ article.featured_image.url }}{% else %}{% static 'images/news-hero-bg.svg' %}{% endif %}'); background-image: var(--hero-bg-url);">

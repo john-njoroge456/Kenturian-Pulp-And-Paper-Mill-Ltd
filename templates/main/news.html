@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}News{% endblock %}
+{% block title %}News — {{ COMPANY_NAME }}{% endblock %}
 {% load static %}
 {% block hero %}
 <div class="page-hero-navy hero-bg-animated" style="--hero-bg-url: url('{% if hero_image %}{{ hero_image.image.url }}{% else %}{% static 'images/news-hero-bg.svg' %}{% endif %}'); background-image: var(--hero-bg-url);">
