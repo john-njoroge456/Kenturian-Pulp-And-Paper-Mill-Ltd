@@ -13,12 +13,6 @@ class OrderRequest(models.Model):
     """A client-submitted request to order paper rolls. Not a checkout/payment
     flow — this feeds Sales, who follow up with a quote/confirmation."""
 
-    UNIT_CHOICES = [
-        ("rolls", "Rolls"),
-        ("kg", "Kilograms"),
-        ("tons", "Tons"),
-    ]
-
     STATUS_CHOICES = [
         ("new", "New"),
         ("reviewed", "Reviewed"),
