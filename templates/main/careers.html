@@ -81,13 +81,14 @@
 {% endfor %}
       </div>
     {% else %}
-      <p class="text-center no-vacancies" data-aos="fade-up">
-        No open positions right now — check back soon, or send us your CV anyway.
+           <p class="text-center no-vacancies mx-auto" style="max-width:560px;" data-aos="fade-up">
+        No open positions right now — check back soon, or send us your CV and we'll keep you in mind.
       </p>
       <div class="text-center">
-        <a href="{% url 'main:contact' %}" class="btn btn-arrow-circle btn-light-arrow">
-  Get in touch <i class="bi bi-arrow-up-right"></i>
-</a>
+        <a href="{% url 'main:general_application' %}" class="btn btn-arrow-circle btn-light-arrow">
+          Send your CV <i class="bi bi-arrow-up-right"></i>
+        </a>
+      </div>
       </div>
     {% endif %}
   </div>
@@ -256,6 +257,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <!-- CTA -->
+{% if jobs %}
 <section class="careers-cta py-5 text-center" data-aos="fade-up">
   <div class="container">
     <h2>Don't see the right role yet?</h2>
@@ -265,5 +267,6 @@ document.addEventListener('DOMContentLoaded', function () {
 </a>
   </div>
 </section>
+{% endif %}
 
 {% endblock %}
