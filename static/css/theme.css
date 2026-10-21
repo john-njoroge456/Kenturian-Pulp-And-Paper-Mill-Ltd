@@ -2857,3 +2857,27 @@ body { overflow-x: clip; }
   }
   .order-items-table tfoot td { display: block; border: none; padding: 0; }
 }
+/* ---- Smooth Ken Burns (GPU-rendered, no pixel jitter) ---- */
+@keyframes kenburns {
+  0%   { transform: scale3d(1, 1, 1) translate3d(0, 0, 0); }
+  100% { transform: scale3d(1.15, 1.15, 1) translate3d(-2%, -2%, 0); }
+}
+@keyframes kbZoomIn {
+  0%   { transform: scale3d(1, 1, 1); }
+  100% { transform: scale3d(1.12, 1.12, 1); }
+}
+@keyframes kbPanRight {
+  0%   { transform: scale3d(1.08, 1.08, 1) translate3d(-2%, 0, 0); }
+  100% { transform: scale3d(1.08, 1.08, 1) translate3d(2%, 0, 0); }
+}
+@keyframes kbPanLeft {
+  0%   { transform: scale3d(1.08, 1.08, 1) translate3d(2%, 0, 0); }
+  100% { transform: scale3d(1.08, 1.08, 1) translate3d(-2%, 0, 0); }
+}
+.kb-zoom-in, .kb-pan-right, .kb-pan-left,
+.page-banner .banner-bg,
+.page-hero-navy.hero-bg-animated::before {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform-origin: center center;
+}
