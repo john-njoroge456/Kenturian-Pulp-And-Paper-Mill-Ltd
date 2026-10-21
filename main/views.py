@@ -199,7 +199,8 @@ def news_detail_view(request, slug):
 
 def index(request):
     products = Product.objects.all().order_by('display_order')[:6]
-    news = NewsArticle.objects.all().order_by('-published_at')[:3]
+    news = NewsArticle.objects.filter(
+        is_published=True).order_by('-published_at')[:3]
     gallery = GalleryImage.objects.filter(
         category='home_hero').order_by('uploaded_at')[:6]
     return render(request, 'main/index.html', {

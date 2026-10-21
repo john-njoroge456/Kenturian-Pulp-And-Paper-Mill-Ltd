@@ -283,6 +283,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <!-- News -->
+{% if news_list %}
 <section class="section-block">
   <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-up">
@@ -315,6 +316,7 @@ document.addEventListener('DOMContentLoaded', function () {
     {% endif %}
   </div>
 </section>
+{% endif %}
 <!-- Request a Quote CTA -->
 <section class="quote-strip" data-aos="zoom-in">
   <div class="container text-center">
