@@ -99,6 +99,15 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+# MariaDB on the server: strict mode and full Unicode
+if DATABASES['default']['ENGINE'] == 'django.db.backends.mysql':
+    DATABASES['default'].setdefault('OPTIONS', {}).update({
+        'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        'charset': 'utf8mb4',
+    })
+
+# MariaDB 10.11 supports long unique fields, so this generic warning doesn't apply
+SILENCED_SYSTEM_CHECKS = ['mysql.W003']
 
 # Site/company defaults (can be edited later via a SiteSettings model or by changing these values)
 COMPANY_NAME = os.environ.get(
