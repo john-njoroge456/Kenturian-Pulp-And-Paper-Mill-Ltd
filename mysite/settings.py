@@ -138,7 +138,17 @@ EMAIL_BACKEND = os.environ.get(
     'EMAIL_BACKEND',
     'django.core.mail.backends.smtp.EmailBackend' if EMAIL_HOST_PASSWORD
     else 'django.core.mail.backends.console.EmailBackend')
-DEFAULT_FROM_EMAIL = f"{COMPANY_NAME} <{COMPANY_EMAIL}>"
+# Address the website sends FROM (must be the mailbox it logs in to, e.g. noreply@)
+FROM_EMAIL = os.environ.get('FROM_EMAIL', '').strip(
+) or EMAIL_HOST_USER or COMPANY_EMAIL
+DEFAULT_FROM_EMAIL = f"{COMPANY_NAME} <{FROM_EMAIL}>"
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# Who receives each kind of staff notification (comma-separated lists).
+# Empty = fall back to COMPANY_EMAIL, the public contact address.
+CONTACT_NOTIFY_EMAILS = env_list('CONTACT_NOTIFY_EMAILS') or [COMPANY_EMAIL]
+ORDERS_NOTIFY_EMAILS = env_list('ORDERS_NOTIFY_EMAILS') or [COMPANY_EMAIL]
+CAREERS_NOTIFY_EMAILS = env_list('CAREERS_NOTIFY_EMAILS') or [COMPANY_EMAIL]
 EMAIL_TIMEOUT = 15  # don't let a slow mail server freeze the page
 
 AUTH_PASSWORD_VALIDATORS = [

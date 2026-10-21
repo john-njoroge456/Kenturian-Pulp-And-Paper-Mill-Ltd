@@ -73,7 +73,7 @@ def order_request_view(request):
             try:
                 staff_email = EmailMultiAlternatives(
                     subject, message, settings.DEFAULT_FROM_EMAIL,
-                    [settings.COMPANY_EMAIL], reply_to=[order.email])
+                    settings.ORDERS_NOTIFY_EMAILS, reply_to=[order.email])
                 staff_email.attach_alternative(html_company, "text/html")
                 if order.lpo_file:
                     lpo_name = os.path.basename(order.lpo_file.name)
@@ -237,7 +237,7 @@ def _process_application(form, job=None):
         "emails/application.html", {**email_ctx, "for_client": True})
     try:
         hr_email = EmailMultiAlternatives(subject, body, settings.DEFAULT_FROM_EMAIL,
-                                          [settings.COMPANY_EMAIL], reply_to=[cd["email"]])
+                                          settings.CAREERS_NOTIFY_EMAILS, reply_to=[cd["email"]])
         hr_email.attach_alternative(html_staff, "text/html")
         # Re-open the saved file: the upload stream was already consumed by save()
         filename = os.path.basename(record.cv_file.name)
@@ -336,7 +336,7 @@ def contact_view(request):
             try:
                 staff_email = EmailMultiAlternatives(
                     subject, message, settings.DEFAULT_FROM_EMAIL,
-                    [settings.COMPANY_EMAIL], reply_to=[cd['email']])
+                    settings.CONTACT_NOTIFY_EMAILS, reply_to=[cd['email']])
                 staff_email.attach_alternative(html_staff, "text/html")
                 staff_email.send()
             except Exception:
