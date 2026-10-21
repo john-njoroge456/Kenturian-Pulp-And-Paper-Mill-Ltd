@@ -44,3 +44,4 @@ db.sqlite3
 .ruff_cache/
 orders_backup.json
 logs/
+.venv313/
