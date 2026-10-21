@@ -45,3 +45,4 @@ db.sqlite3
 orders_backup.json
 logs/
 .venv313/
+private_media/

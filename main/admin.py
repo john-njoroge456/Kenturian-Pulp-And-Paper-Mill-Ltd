@@ -56,7 +56,9 @@ class OrderRequestAdmin(admin.ModelAdmin):
                    "client_email_sent", "created_at")
     search_fields = ("reference", "company_name", "contact_person",
                      "email", "phone", "items__item_description")
-    readonly_fields = ("reference", "created_at")
+    readonly_fields = ("reference", "created_at", "lpo_link")
+    # the client's LPO can be downloaded, not replaced
+    exclude = ("lpo_file",)
     list_editable = ("status",)
     date_hierarchy = "created_at"
     inlines = [OrderItemInline]
@@ -73,6 +75,24 @@ class OrderRequestAdmin(admin.ModelAdmin):
     def total_kg(self, obj):
         return f"{obj.total_quantity:,}"
 
+    # ---- Protected LPO download ----
+    @admin.display(description="LPO")
+    def lpo_link(self, obj):
+        if not obj.lpo_file:
+            return "—"
+        url = reverse("admin:main_orderrequest_lpo", args=[obj.pk])
+        return format_html('<a href="{}">Download LPO</a>', url)
+
+    def download_lpo(self, request, pk):
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        order = get_object_or_404(OrderRequest, pk=pk)
+        if not order.lpo_file:
+            raise Http404
+        return FileResponse(order.lpo_file.open("rb"), as_attachment=True,
+                            filename=os.path.basename(order.lpo_file.name))
+
+    # ---- Order list with totals + report button ----
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context["can_view_report"] = request.user.has_perm(
@@ -81,7 +101,7 @@ class OrderRequestAdmin(admin.ModelAdmin):
         try:
             qs = response.context_data["cl"].queryset
         except (AttributeError, KeyError):
-            return response   # e.g. a redirect after saving
+            return response
         totals = OrderItem.objects.filter(order__in=qs.values("pk")).aggregate(
             kg=Sum("quantity"), lines=Count("id"))
         response.context_data["order_totals"] = {
@@ -91,10 +111,13 @@ class OrderRequestAdmin(admin.ModelAdmin):
         }
         return response
 
+    # ---- Extra admin pages: report + LPO download ----
     def get_urls(self):
         custom = [
             path("report/", self.admin_site.admin_view(self.report_view),
                  name="main_orderrequest_report"),
+            path("<int:pk>/lpo/", self.admin_site.admin_view(self.download_lpo),
+                 name="main_orderrequest_lpo"),
         ]
         return custom + super().get_urls()
 
@@ -113,6 +136,7 @@ class OrderRequestAdmin(admin.ModelAdmin):
             start, end, client=client, product=product, status=status)
         filter_qs = urlencode({k: v for k, v in
                                (("client", client), ("product", product), ("status", status)) if v})
+
         export = request.GET.get("export")
         if export == "orders":
             filename = f"kenturian-orders-{start:%Y%m%d}-{end:%Y%m%d}.xlsx"
@@ -120,6 +144,7 @@ class OrderRequestAdmin(admin.ModelAdmin):
         if export == "xlsx":
             filename = f"kenturian-order-report-{start:%Y%m%d}-{end:%Y%m%d}.xlsx"
             return xlsx_response(report_workbook(report), filename)
+
         context = {
             **self.admin_site.each_context(request),
             "opts": self.model._meta,

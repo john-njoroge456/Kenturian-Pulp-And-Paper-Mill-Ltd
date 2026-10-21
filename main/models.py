@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 from django.urls import reverse
 import uuid
+from .storage import private_storage
 
 
 User = get_user_model()
@@ -33,10 +34,10 @@ class OrderRequest(models.Model):
     preferred_delivery_date = models.DateField(null=True, blank=True)
 
     # Attachments / notes
+    # Attachments / notes
     lpo_file = models.FileField(
-        upload_to="order_lpos/%Y/%m/", blank=True, null=True)
+        upload_to="order_lpos/%Y/%m/", storage=private_storage, blank=True, null=True)
     notes = models.TextField(blank=True)
-
     # Internal tracking
     status = models.CharField(
         max_length=12, choices=STATUS_CHOICES, default="new")
@@ -343,7 +344,8 @@ class JobApplication(models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=30, blank=True)
     message = models.TextField()
-    cv_file = models.FileField(upload_to="applications/%Y/%m/")
+    cv_file = models.FileField(
+        upload_to="applications/%Y/%m/", storage=private_storage)
     STATUS_CHOICES = [
         ("new", "New"),
         ("shortlisted", "Shortlisted"),

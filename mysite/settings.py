@@ -162,7 +162,12 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Public uploads (product, gallery, news, team images): served to everyone
+MEDIA_ROOT = Path(os.environ.get('MEDIA_ROOT', BASE_DIR / 'media'))
+
+# Private uploads (CVs, LPOs): never served directly, only through admin download links
+PRIVATE_MEDIA_ROOT = Path(os.environ.get(
+    'PRIVATE_MEDIA_ROOT', BASE_DIR / 'private_media'))
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
