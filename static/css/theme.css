@@ -2856,23 +2856,22 @@ body { overflow-x: clip; }
     padding-top: 0.6rem;
   }
   .order-items-table tfoot td { display: block; border: none; padding: 0; }
-}
-/* ---- Smooth Ken Burns (GPU-rendered, no pixel jitter) ---- */
+}/* ---- Smooth Ken Burns (GPU-rendered, no pixel jitter, Firefox-safe) ---- */
 @keyframes kenburns {
-  0%   { transform: scale3d(1, 1, 1) translate3d(0, 0, 0); }
-  100% { transform: scale3d(1.15, 1.15, 1) translate3d(-2%, -2%, 0); }
+  0%   { transform: scale3d(1, 1, 1) translate3d(0, 0, 0) rotate(0.02deg); }
+  100% { transform: scale3d(1.15, 1.15, 1) translate3d(-2%, -2%, 0) rotate(0.02deg); }
 }
 @keyframes kbZoomIn {
-  0%   { transform: scale3d(1, 1, 1); }
-  100% { transform: scale3d(1.12, 1.12, 1); }
+  0%   { transform: scale3d(1, 1, 1) rotate(0.02deg); }
+  100% { transform: scale3d(1.12, 1.12, 1) rotate(0.02deg); }
 }
 @keyframes kbPanRight {
-  0%   { transform: scale3d(1.08, 1.08, 1) translate3d(-2%, 0, 0); }
-  100% { transform: scale3d(1.08, 1.08, 1) translate3d(2%, 0, 0); }
+  0%   { transform: scale3d(1.08, 1.08, 1) translate3d(-2%, 0, 0) rotate(0.02deg); }
+  100% { transform: scale3d(1.08, 1.08, 1) translate3d(2%, 0, 0) rotate(0.02deg); }
 }
 @keyframes kbPanLeft {
-  0%   { transform: scale3d(1.08, 1.08, 1) translate3d(2%, 0, 0); }
-  100% { transform: scale3d(1.08, 1.08, 1) translate3d(-2%, 0, 0); }
+  0%   { transform: scale3d(1.08, 1.08, 1) translate3d(2%, 0, 0) rotate(0.02deg); }
+  100% { transform: scale3d(1.08, 1.08, 1) translate3d(-2%, 0, 0) rotate(0.02deg); }
 }
 .kb-zoom-in, .kb-pan-right, .kb-pan-left,
 .page-banner .banner-bg,
@@ -2880,4 +2879,9 @@ body { overflow-x: clip; }
   will-change: transform;
   backface-visibility: hidden;
   transform-origin: center center;
+}
+.carousel-item.active .kb-zoom-in,
+.carousel-item.active .kb-pan-right,
+.carousel-item.active .kb-pan-left {
+  animation-timing-function: linear;
 }
