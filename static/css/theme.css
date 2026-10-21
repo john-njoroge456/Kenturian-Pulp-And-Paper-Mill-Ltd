@@ -603,7 +603,9 @@ h1, .hero-title {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(10,26,46,0.75) 0%, rgba(20,51,92,0.55) 60%, rgba(10,26,46,0.85) 100%);
+  background:
+    radial-gradient(ellipse at center, rgba(11,31,58,0.40) 0%, rgba(11,31,58,0) 70%),
+    linear-gradient(to top, rgba(11,31,58,0.65) 0%, rgba(11,31,58,0.10) 45%, rgba(11,31,58,0.25) 100%);
   z-index: 1;
 }
 .page-banner .banner-content {
