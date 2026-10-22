@@ -1704,9 +1704,9 @@ main.container.mb-5 {
   inset: 0;
   background: linear-gradient(
     100deg,
-    rgba(11, 31, 58, 0.75) 0%,
-    rgba(11, 31, 58, 0.55) 25%,
-    rgba(11, 31, 58, 0.15) 50%,
+    rgba(11, 31, 58, 0.40) 0%,
+    rgba(11, 31, 58, 0.25) 25%,
+    rgba(11, 31, 58, 0.08) 50%,
     rgba(11, 31, 58, 0) 65%
   ),
   linear-gradient(
