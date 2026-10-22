@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from io import BytesIO
 
 from django.db.models import Count, Sum
@@ -152,15 +152,24 @@ def _scoped_items(orders, product):
     return items.filter(item_description=product) if product else items
 
 
+def _between(start, end):
+    """Whole days from start to end (Nairobi time), without asking the database to convert time zones."""
+    tz = timezone.get_current_timezone()
+    return {
+        "created_at__gte": timezone.make_aware(datetime.combine(start, time.min), tz),
+        "created_at__lt": timezone.make_aware(datetime.combine(end + timedelta(days=1), time.min), tz),
+    }
+
+
 def build_order_report(start, end, client="", product="", status=""):
     days = (end - start).days + 1
     prev_end = start - timedelta(days=1)
     prev_start = prev_end - timedelta(days=days - 1)
 
     orders = _scope(OrderRequest.objects.filter(
-        created_at__date__gte=start, created_at__date__lte=end), client, product, status)
+        **_between(start, end)), client, product, status)
     prev_orders = _scope(OrderRequest.objects.filter(
-        created_at__date__gte=prev_start, created_at__date__lte=prev_end), client, product, status)
+        **_between(prev_start, prev_end)), client, product, status)
     items = _scoped_items(orders, product)
     prev_items = _scoped_items(prev_orders, product)
 

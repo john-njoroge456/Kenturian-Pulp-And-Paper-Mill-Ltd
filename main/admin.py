@@ -60,7 +60,6 @@ class OrderRequestAdmin(admin.ModelAdmin):
     # the client's LPO can be downloaded, not replaced
     exclude = ("lpo_file",)
     list_editable = ("status",)
-    date_hierarchy = "created_at"
     inlines = [OrderItemInline]
     actions = [export_orders_xlsx]
 
@@ -288,7 +287,6 @@ class JobApplicationAdmin(admin.ModelAdmin):
     list_filter = ("status", "job", "created_at")
     list_editable = ("status",)
     search_fields = ("reference", "name", "email", "phone")
-    date_hierarchy = "created_at"
     actions = [export_applications_xlsx]
     fields = ("reference", "created_at", "job", "name", "email", "phone",
               "message", "cv_link", "status", "hr_notes", "client_email_sent")
