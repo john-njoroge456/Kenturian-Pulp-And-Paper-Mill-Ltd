@@ -2,38 +2,40 @@ name: CI
 
 on:
   push:
-    branches: [ main, django-starter ]
+    branches: [main, deployment-prep]
   pull_request:
-    branches: [ main ]
 
 jobs:
-  build:
+  checks:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.11']
-
+    env:
+      DEBUG: "False"
+      SECRET_KEY: "ci-only-not-a-real-secret-0123456789abcdefghijklmnopqrstuvwxyz"
+      ALLOWED_HOSTS: "localhost,127.0.0.1"
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install packages
+        run: pip install -r requirements.txt
 
-    - name: Run migrations and system check
-      env:
-        DATABASE_URL: sqlite:///db.sqlite3
-      run: |
-        python manage.py migrate --noinput
-        python manage.py check
+      - name: Django system check
+        run: python manage.py check
 
-    - name: Run tests
-      run: |
-        # run tests if present; this will succeed even with no tests
-        pytest -q || true
+      - name: No missing migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Static files collect
+        run: python manage.py collectstatic --noinput
+
+      - name: Production security check
+        env:
+          SECURE_SSL: "True"
+        run: python manage.py check --deploy --fail-level ERROR
+
+      - name: Tests
+        run: python manage.py test
