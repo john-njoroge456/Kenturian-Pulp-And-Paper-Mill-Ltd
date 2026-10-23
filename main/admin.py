@@ -14,7 +14,7 @@ from django.utils.html import format_html
 from .models import LeadershipMember
 from .reports import (orders_workbook, xlsx_response, PRESETS, resolve_period,
                       build_order_report, report_workbook, applications_workbook)
-from .models import Product, NewsArticle, GalleryImage, JobPosting, EmployeeStory, NewsCategory, NewsTag, OrderRequest, OrderItem, OrderItemOption, ContactMessage, JobApplication
+from .models import Product, NewsArticle, GalleryImage, JobPosting, EmployeeStory, NewsCategory, NewsTag, OrderRequest, OrderItem, OrderItemOption, ContactMessage, JobApplication, NewsImage
 
 
 class OrderItemInline(admin.TabularInline):
@@ -248,6 +248,12 @@ class NewsTagAdmin(admin.ModelAdmin):
     list_display = ('name', 'slug')
 
 
+class NewsImageInline(admin.TabularInline):
+    model = NewsImage
+    extra = 1
+    fields = ('image', 'caption', 'order')
+
+
 @admin.register(NewsArticle)
 class NewsArticleAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('title',)}
@@ -255,6 +261,7 @@ class NewsArticleAdmin(admin.ModelAdmin):
     list_filter = ('category', 'tags', 'is_published')
     search_fields = ('title', 'excerpt', 'body')
     filter_horizontal = ('tags',)
+    inlines = [NewsImageInline]
 
 
 @admin.register(LeadershipMember)

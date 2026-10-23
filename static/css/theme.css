@@ -2885,3 +2885,60 @@ body { overflow-x: clip; }
 .carousel-item.active .kb-pan-left {
   animation-timing-function: linear;
 }
+/* News article photo gallery */
+.article-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 2rem;
+}
+.article-gallery-item { margin: 0; }
+.article-gallery-item img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  object-position: center 30%;
+  border-radius: 12px;
+  display: block;
+  transition: transform 0.3s ease;
+}
+.article-gallery-item a:hover img { transform: scale(1.02); }
+.article-gallery-item figcaption {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-top: 0.5rem;
+}/* Lightbox caption: light text on the dark overlay instead of a white panel */
+.glightbox-container.glightbox-clean .gslide-description {
+  background: transparent;
+}
+.glightbox-container.glightbox-clean .gdesc-inner {
+  padding: 12px 0 0;
+  text-align: center;
+}
+.glightbox-container.glightbox-clean .gslide-title {
+  color: #fff;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+}
+.glightbox-container .gslide-image img {
+  max-height: calc(100vh - 100px) !important;
+}/* News article featured photo, shown whole above the text */
+.article-feature { margin: 0 0 2rem; }
+.article-feature img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(10, 26, 46, 0.12);
+}
+/* News cards: taller so more photo shows above the text, focus slightly high for faces */
+.news-card {
+  height: auto;
+  min-height: 360px;
+  aspect-ratio: auto;
+}
+.news-card-bg {
+  background-position: center 25%;
+}

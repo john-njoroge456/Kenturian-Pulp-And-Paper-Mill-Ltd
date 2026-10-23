@@ -185,6 +185,20 @@ class NewsArticle(models.Model):
         return self.title
 
 
+class NewsImage(models.Model):
+    article = models.ForeignKey(
+        NewsArticle, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='news/gallery/')
+    caption = models.CharField(max_length=200, blank=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return self.caption or f"Photo for {self.article.title}"
+
+
 class GalleryImage(models.Model):
     CATEGORY_CHOICES = [
         ('home_hero', 'Homepage Hero Carousel'),

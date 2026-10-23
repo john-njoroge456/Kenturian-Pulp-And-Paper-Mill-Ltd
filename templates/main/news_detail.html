@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% load static %}
+{% load text_extras %}
 
 {% block title %}{{ article.title }} — {{ COMPANY_NAME }}{% endblock %}
 
 {% block hero %}
-<div class="page-hero-navy hero-bg-animated" style="--hero-bg-url: url('{% if article.featured_image %}{{ article.featured_image.url }}{% else %}{% static 'images/news-hero-bg.svg' %}{% endif %}'); background-image: var(--hero-bg-url);">
+<div class="page-hero-navy">
   <div class="page-hero-navy-overlay"></div>
   <div class="page-hero-navy-content">
     <h1 class="hero-title mb-0">{{ article.title }}</h1>
@@ -12,10 +13,10 @@
       {% if article.category %}{{ article.category.name }} &middot; {% endif %}{{ article.published_at|date:"F d, Y" }}
     </p>
     <div class="breadcrumb-text">
-  <a href="{% url 'main:index' %}" class="breadcrumb-link">Home</a>
-  <span class="breadcrumb-current"> / </span>
-  <a href="{% url 'main:news_list' %}" class="breadcrumb-link">News</a>
-</div>
+      <a href="{% url 'main:index' %}" class="breadcrumb-link">Home</a>
+      <span class="breadcrumb-current"> / </span>
+      <a href="{% url 'main:news_list' %}" class="breadcrumb-link">News</a>
+    </div>
   </div>
 </div>
 {% endblock %}
@@ -25,8 +26,6 @@
   <div class="container">
 
     <div class="news-article-wrap mx-auto" data-aos="fade-up">
-
-    
 
       {% if article.tags.all %}
       <div class="d-flex flex-wrap gap-2 mb-4">
@@ -38,16 +37,47 @@
       </div>
       {% endif %}
 
+      {% if article.featured_image %}
+      <figure class="article-feature" data-aos="fade-up">
+        <a href="{{ article.featured_image.url }}" class="glightbox" data-gallery="article-photos" data-title="{{ article.title }}">
+          <img src="{{ article.featured_image.url }}" alt="{{ article.title }}">
+        </a>
+      </figure>
+      {% endif %}
+
       <div class="article-body">
         {{ article.body|linebreaks }}
       </div>
+
+      {% with photos=article.images.all %}
+      {% if photos %}
+      <div class="article-gallery" data-aos="fade-up">
+        {% for photo in photos %}
+        <figure class="article-gallery-item">
+          <a href="{{ photo.image.url }}" class="glightbox" data-gallery="article-photos" data-title="{{ photo.caption }}">
+            <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:article.title }}" loading="lazy">
+          </a>
+          {% if photo.caption %}<figcaption>{{ photo.caption }}</figcaption>{% endif %}
+        </figure>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+
+      {% if article.featured_image or article.images.all %}
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox@3.3.0/dist/css/glightbox.min.css">
+      <script src="https://cdn.jsdelivr.net/npm/glightbox@3.3.0/dist/js/glightbox.min.js"></script>
+      <script>
+        GLightbox({ selector: '.glightbox', loop: true, touchNavigation: true });
+      </script>
+      {% endif %}
 
     </div>
 
     {% if related %}
     <div class="related-news-section" data-aos="fade-up">
-  <h3 class="mb-4 related-news-heading">Related News</h3>
-  <div class="row">
+      <h3 class="mb-4 related-news-heading">Related News</h3>
+      <div class="row">
         {% for r in related %}
         <div class="col-12 col-md-4 mb-4">
           <div class="card card-custom h-100">
@@ -69,7 +99,6 @@
         {% endfor %}
       </div>
     </div>
-    </div>
     {% endif %}
 
     <div class="text-center mt-4">
@@ -79,6 +108,7 @@
   </div>
 </section>
 {% endblock %}
+
 {% block og_title %}{{ article.title }}{% endblock %}
-{% block og_description %}{{ article.excerpt|default:article.body|striptags|truncatechars:150 }}{% endblock %}
-{% block meta_description %}{{ article.excerpt|default:article.body|striptags|truncatechars:150 }}{% endblock %}
+{% block og_description %}{{ article.excerpt|default:article.body|striptags|truncate_smart:150 }}{% endblock %}
+{% block meta_description %}{{ article.excerpt|default:article.body|striptags|truncate_smart:150 }}{% endblock %}

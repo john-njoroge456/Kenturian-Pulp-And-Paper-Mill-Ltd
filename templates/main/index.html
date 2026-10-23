@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load text_extras %}
 
 {% block title %}{{ COMPANY_NAME }} — Quality Paper Manufacturers in Kenya{% endblock %}
 
@@ -156,7 +157,7 @@ Available in a range of grades, colours, sizes and specifications, our products 
         {% endif %}
 <div class="container product-slide-content text-center py-5">
 <h2><a href="{% url 'main:product_detail' p.pk %}">{{ p.name }}</a></h2>
-<p>{{ p.description|truncatechars:300 }}</p>
+<p>{{ p.description|truncate_smart:300 }}</p>
 </div>
 </div>
       {% empty %}
@@ -305,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function () {
               <div class="news-card-content">
                 <div class="news-card-date">{{ n.published_at|date:"M d, Y" }}</div>
                 <h5 class="news-card-title">{{ n.title }}</h5>
-                <p class="news-card-excerpt mb-0">{{ n.excerpt|default:n.body|truncatechars:140 }}</p>
+                <p class="news-card-excerpt mb-0">{{ n.excerpt|default:n.body|truncate_smart:90 }}</p>
               </div>
             </a>
           </div>
