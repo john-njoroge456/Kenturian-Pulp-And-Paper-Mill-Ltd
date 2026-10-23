@@ -46,3 +46,5 @@ orders_backup.json
 logs/
 .venv313/
 private_media/
+content.json
+media.zip

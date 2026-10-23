@@ -125,7 +125,7 @@ COMPANY_PHONE = os.environ.get('COMPANY_PHONE', '+254720044513')
 ADMIN_URL = os.environ.get('ADMIN_URL', 'admin/').strip('/') + '/'
 
 # E.164 without the + for wa.me links
-FOOTER_WHATSAPP = os.environ.get('FOOTER_WHATSAPP', '254795979982')
+FOOTER_WHATSAPP = os.environ.get('FOOTER_WHATSAPP', '254725212181')
 
 # Email: sends through SMTP when a password is provided, otherwise prints to the console
 # change for another provider
