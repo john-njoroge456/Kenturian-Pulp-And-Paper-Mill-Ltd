@@ -2,9 +2,10 @@ import os
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from PIL import Image
+from PIL import Image, ImageOps
 
-from main.models import EmployeeStory, GalleryImage, LeadershipMember, NewsArticle, Product
+from main.models import EmployeeStory, GalleryImage, LeadershipMember, NewsArticle, Product, NewsImage
+
 
 # (model, image field, maximum width in pixels)
 JOBS = [
@@ -13,6 +14,7 @@ JOBS = [
     (Product, "image", 1400),
     (EmployeeStory, "photo", 800),
     (LeadershipMember, "photo", 800),
+    (NewsImage, "image", 1600),
 ]
 SMALL_ENOUGH = 300_000  # bytes; smaller files within the width limit are left alone
 
@@ -41,30 +43,35 @@ class Command(BaseCommand):
 
                 before = os.path.getsize(path)
                 im = Image.open(path)
+                im = ImageOps.exif_transpose(im)
                 if before < SMALL_ENOUGH and im.width <= max_w:
                     continue
 
-                has_alpha = im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info)
+                has_alpha = im.mode in ("RGBA", "LA") or (
+                    im.mode == "P" and "transparency" in im.info)
                 if has_alpha:
                     im = im.convert("RGBA")
                     if im.getchannel("A").getextrema()[0] == 255:
                         has_alpha = False  # transparency not actually used
 
                 if im.width > max_w:
-                    im = im.resize((max_w, round(im.height * max_w / im.width)), Image.LANCZOS)
+                    im = im.resize(
+                        (max_w, round(im.height * max_w / im.width)), Image.LANCZOS)
 
                 base = os.path.splitext(f.name)[0]
                 new_name = base + (".webp" if has_alpha else ".jpg")
                 new_path = os.path.join(root, new_name)
 
                 if dry_run:
-                    self.stdout.write(f"Would convert {f.name} ({before / 1e6:.1f} MB) -> {new_name}")
+                    self.stdout.write(
+                        f"Would convert {f.name} ({before / 1e6:.1f} MB) -> {new_name}")
                     continue
 
                 if has_alpha:
                     im.save(new_path, "WEBP", quality=82, method=6)
                 else:
-                    im.convert("RGB").save(new_path, "JPEG", quality=82, optimize=True, progressive=True)
+                    im.convert("RGB").save(new_path, "JPEG",
+                                           quality=82, optimize=True, progressive=True)
                 after = os.path.getsize(new_path)
 
                 if new_name != f.name:
@@ -74,7 +81,8 @@ class Command(BaseCommand):
 
                 before_total += before
                 after_total += after
-                self.stdout.write(f"{f.name}: {before / 1e6:.1f} MB -> {new_name.split('/')[-1]}: {after / 1e6:.2f} MB")
+                self.stdout.write(
+                    f"{f.name}: {before / 1e6:.1f} MB -> {new_name.split('/')[-1]}: {after / 1e6:.2f} MB")
 
         if not dry_run:
             self.stdout.write(self.style.SUCCESS(
