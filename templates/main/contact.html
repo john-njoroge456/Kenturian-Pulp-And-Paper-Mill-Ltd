@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load text_extras %}
 {% block title %}Contact — {{ COMPANY_NAME }}{% endblock %}
 
 {% block hero %}
@@ -109,14 +110,14 @@
             {% if COMPANY_PHONE %}
             <li class="contact-info-item">
               <span class="contact-info-icon"><i class="bi bi-telephone-fill"></i></span>
-              <span><a href="tel:{{ COMPANY_PHONE }}">{{ COMPANY_PHONE }}</a></span>
+              <span><a href="tel:{{ COMPANY_PHONE }}">{{ COMPANY_PHONE|phone_display }}</a></span>
             </li>
             {% endif %}
 
             {% if FOOTER_WHATSAPP %}
             <li class="contact-info-item">
               <span class="contact-info-icon"><i class="bi bi-whatsapp"></i></span>
-              <span><a href="https://wa.me/{{ FOOTER_WHATSAPP }}" target="_blank" rel="noopener noreferrer">+{{ FOOTER_WHATSAPP }}</a></span>
+              <span><a href="https://wa.me/{{ FOOTER_WHATSAPP }}" target="_blank" rel="noopener noreferrer">{{ FOOTER_WHATSAPP|phone_display }}</a></span>
             </li>
             {% endif %}
 

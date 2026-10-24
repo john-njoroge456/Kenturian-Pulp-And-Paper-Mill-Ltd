@@ -3030,3 +3030,11 @@ body { overflow-x: clip; }
 @media (max-width: 991.98px) {
   .news-card { min-height: 320px; }
 }
+/* Footer: full width like the header, content stays centred */
+.site-footer { padding: 0; background: var(--brand-navy); }
+.site-footer .footer-inner {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  border-radius: 0;
+}
