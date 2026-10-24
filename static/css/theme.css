@@ -2936,7 +2936,7 @@ body { overflow-x: clip; }
 /* News cards: taller so more photo shows above the text, focus slightly high for faces */
 .news-card {
   height: auto;
-  min-height: 360px;
+  min-height: 300px;
   aspect-ratio: auto;
 }
 .news-card-bg {
