@@ -203,10 +203,14 @@ def index(request):
         is_published=True).order_by('-published_at')[:3]
     gallery = GalleryImage.objects.filter(
         category='home_hero').order_by('uploaded_at')[:6]
+    people_photos = GalleryImage.objects.filter(
+        category='home_people').order_by('uploaded_at')[:5]
     return render(request, 'main/index.html', {
         'products': products,
         'news_list': news,
         'gallery': gallery,
+        'people_photos': people_photos,
+
     })
 
 

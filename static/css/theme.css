@@ -2942,3 +2942,91 @@ body { overflow-x: clip; }
 .news-card-bg {
   background-position: center 25%;
 }
+/* ===== Homepage "Our People" section: header row + navy panel and crossfading photo card ===== */
+.people-band {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  min-height: clamp(360px, 50vh, 480px);
+  margin-top: 2.5rem;
+  background: var(--brand-navy);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+/* Navy text panel */
+.people-band-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 3rem clamp(1.5rem, 4vw, 3.5rem);
+}
+.people-band-text h2 {
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  margin-bottom: 0.75rem;
+}
+.people-band-text p {
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 1.5rem;
+}
+.people-band-btn,
+.people-band-btn:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--brand-gold);
+  color: var(--brand-navy);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.people-band-btn:hover {
+  color: var(--brand-navy);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(217, 164, 65, 0.4);
+}
+
+/* Photo side: crossfading slides with a slow zoom */
+.people-band-media {
+  position: relative;
+  overflow: hidden;
+}
+.people-band-slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 70%;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  animation: peopleZoom 14s ease-in-out infinite alternate;
+}
+.people-band-slide.is-active { opacity: 1; }
+@keyframes peopleZoom {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+
+/* Tablets and phones: photo on top, navy panel below */
+@media (max-width: 991.98px) {
+  .people-band { grid-template-columns: 1fr; }
+  .people-band-media { order: -1; min-height: 280px; }
+  .people-band-text { padding: 2rem 1.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .people-band-slide { animation: none; transition: none; }
+}
+.people-section.section-block { padding-top: 2rem; }
+@media (max-width: 991.98px) {
+  .people-section.section-block { padding-top: 1rem; }
+  .people-band-text { padding: 1.5rem 1.25rem; }
+  .people-band-text h2 { font-size: 1.6rem; }
+  .people-band-media { min-height: 240px; }
+}
+@media (max-width: 991.98px) {
+  .news-card { min-height: 320px; }
+}

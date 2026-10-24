@@ -209,6 +209,7 @@ class GalleryImage(models.Model):
         ('news_hero', 'News Page Banner'),
         ('contact_hero', 'Contact Page Banner'),
         ('general', 'General / Uncategorized'),
+        ('home_people', 'Homepage — Our People'),
 
     ]
 

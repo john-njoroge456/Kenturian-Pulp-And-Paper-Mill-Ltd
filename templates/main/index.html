@@ -120,6 +120,54 @@ and expand our product range, our focus remains simple:
   </div>
 </section>
 
+{% if people_photos %}
+<!-- Our People -->
+<section class="section-block people-section" id="our-people">
+  <div class="container">
+    <div class="row align-items-center" data-aos="fade-up">
+      <div class="col-md-4">
+        <span class="section-label"><span class="dot"></span> OUR PEOPLE</span>
+        <h2 class="section-heading section-heading-lg">Our Team</h2>
+      </div>
+      <div class="col-md-7">
+        <p>From the production floor to dispatch, our people are at the heart of everything we make, bringing skill, care and dedication to every roll.</p>
+      </div>
+      <div class="col-md-1 text-md-end">
+        <a href="{% url 'main:about' %}#our-team" class="arrow-btn" aria-label="Meet our team">&#8599;</a>
+      </div>
+    </div>
+
+    <div class="people-band" aria-label="Our People">
+      <div class="people-band-text" data-aos="fade-up">
+        <h2>The People Behind Every Roll</h2>
+        <a href="{% url 'main:careers' %}" class="people-band-btn">Join our team <span aria-hidden="true">&rarr;</span></a>
+      </div>
+      <div class="people-band-media">
+        {% for photo in people_photos %}
+        <div class="people-band-slide{% if forloop.first %} is-active{% endif %}"
+             style="background-image:url('{{ photo.image.url }}');"
+             role="img" aria-label="{{ photo.caption|default:photo.title }}"></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% if people_photos|length > 1 %}
+<script>
+(function () {
+  var slides = document.querySelectorAll('.people-band-slide');
+  if (slides.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var i = 0;
+  setInterval(function () {
+    slides[i].classList.remove('is-active');
+    i = (i + 1) % slides.length;
+    slides[i].classList.add('is-active');
+  }, 7000);
+})();
+</script>
+{% endif %}
+{% endif %}
+
 <!-- Our Business -->
 <section class="section-block" id="our-company">
   <div class="container">
@@ -297,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function () {
     {% if news_list %}
       <div class="row">
         {% for n in news_list %}
-          <div class="col-12 col-md-4 mb-4" data-aos="fade-up" data-aos-delay="{% widthratio forloop.counter0 1 150 %}">
+          <div class="col-12 col-sm-6 col-lg-4 mb-4" data-aos="fade-up" data-aos-delay="{% widthratio forloop.counter0 1 150 %}">
             <a href="{% url 'main:news_detail' n.slug %}" class="news-card {% if not n.featured_image %}news-card-noimage{% endif %}">
               {% if n.featured_image %}
               <div class="news-card-bg" style="background-image:url('{{ n.featured_image.url }}');"></div>
