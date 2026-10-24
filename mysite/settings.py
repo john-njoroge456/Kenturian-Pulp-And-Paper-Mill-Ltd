@@ -152,6 +152,12 @@ ORDERS_NOTIFY_EMAILS = env_list('ORDERS_NOTIFY_EMAILS') or [COMPANY_EMAIL]
 CAREERS_NOTIFY_EMAILS = env_list('CAREERS_NOTIFY_EMAILS') or [COMPANY_EMAIL]
 EMAIL_TIMEOUT = 15  # don't let a slow mail server freeze the page
 
+# Where client replies to website confirmations should go
+ORDERS_REPLY_TO = os.environ.get('ORDERS_REPLY_TO', 'sales@kenturian.co.ke')
+CAREERS_REPLY_TO = os.environ.get(
+    'CAREERS_REPLY_TO', 'careers@kenturian.co.ke')
+CONTACT_REPLY_TO = os.environ.get('CONTACT_REPLY_TO', 'info@kenturian.co.ke')
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',

@@ -5,7 +5,7 @@ from django.template.loader import render_to_string
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.conf import settings
-from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives
 from django.utils.text import Truncator
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -99,8 +99,11 @@ def order_request_view(request):
                 f"— Kenturian Pulp & Paper Mills Limited"
             )
             try:
-                send_mail(client_subject, client_message,
-                          settings.DEFAULT_FROM_EMAIL, [order.email], html_message=html_client)
+                client_email = EmailMultiAlternatives(
+                    client_subject, client_message, settings.DEFAULT_FROM_EMAIL,
+                    [order.email], reply_to=[settings.ORDERS_REPLY_TO])
+                client_email.attach_alternative(html_client, "text/html")
+                client_email.send()
                 order.client_email_sent = True
                 order.save(update_fields=["client_email_sent"])
             except Exception:
@@ -270,9 +273,12 @@ def _process_application(form, job=None):
         f"— Kenturian Pulp & Paper Mills Limited"
     )
     try:
-        send_mail(f"We've received your application — Ref {record.reference}",
-                  client_message, settings.DEFAULT_FROM_EMAIL, [cd["email"]],
-                  html_message=html_client)
+        client_email = EmailMultiAlternatives(
+            f"We've received your application — Ref {record.reference}",
+            client_message, settings.DEFAULT_FROM_EMAIL, [cd["email"]],
+            reply_to=[settings.CAREERS_REPLY_TO])
+        client_email.attach_alternative(html_client, "text/html")
+        client_email.send()
         record.client_email_sent = True
         record.save(update_fields=["client_email_sent"])
     except Exception:
@@ -359,8 +365,11 @@ def contact_view(request):
                 f"— Kenturian Pulp & Paper Mills Limited"
             )
             try:
-                send_mail(client_subject, client_message, settings.DEFAULT_FROM_EMAIL,
-                          [cd['email']], html_message=html_client)
+                client_email = EmailMultiAlternatives(
+                    client_subject, client_message, settings.DEFAULT_FROM_EMAIL,
+                    [cd['email']], reply_to=[settings.CONTACT_REPLY_TO])
+                client_email.attach_alternative(html_client, "text/html")
+                client_email.send()
                 record.client_email_sent = True
                 record.save(update_fields=["client_email_sent"])
             except Exception:
