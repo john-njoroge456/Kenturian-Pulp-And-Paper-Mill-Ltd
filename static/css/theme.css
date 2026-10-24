@@ -3038,3 +3038,14 @@ body { overflow-x: clip; }
   margin: 0;
   border-radius: 0;
 }
+/* Our People band: smooth the slow zoom (same fix as the hero carousel) */
+.people-band-slide {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  animation-timing-function: linear;
+}
+@keyframes peopleZoom {
+  from { transform: translateZ(0) scale(1); }
+  to   { transform: translateZ(0) scale(1.06); }
+}
