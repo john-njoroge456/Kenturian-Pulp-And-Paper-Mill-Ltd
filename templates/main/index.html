@@ -204,7 +204,7 @@ Available in a range of grades, colours, sizes and specifications, our products 
 <img src="{{ p.image.url }}" alt="" class="product-float-img right" aria-hidden="true">
         {% endif %}
 <div class="container product-slide-content text-center py-5">
-<h2><a href="{% url 'main:product_detail' p.pk %}">{{ p.name }}</a></h2>
+   <h2>{{ p.name }}</h2>
 <p>{{ p.description|truncate_smart:300 }}</p>
 </div>
 </div>
