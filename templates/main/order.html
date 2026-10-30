@@ -311,6 +311,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // --- Colour rules for one row (fixed and blocked colours come from forms.py) ---
   function setupRow(row) {
+    row.querySelectorAll('[name$="-item_description"], [name$="-length"], [name$="-gsm"], [name$="-quantity"]')
+    .forEach(function (el) { el.required = true; });
     var itemField = row.querySelector('.item-description');
     var colorField = row.querySelector('.item-color');
     var otherWrap = row.querySelector('.color-other-wrap');
