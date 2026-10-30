@@ -11,6 +11,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from .models import OrderRequest
 from .forms import OrderRequestForm, OrderItemFormSet, MAX_ITEMS
+from django.http import Http404
 
 
 from .models import (
@@ -109,6 +110,9 @@ def order_request_view(request):
             except Exception:
                 pass
 
+            placed = request.session.get("placed_orders", [])
+            placed.append(order.reference)
+            request.session["placed_orders"] = placed[-10:]
             return redirect(reverse("main:order_success", args=[order.reference]))
     else:
         form = OrderRequestForm()
@@ -123,6 +127,8 @@ def order_request_view(request):
 
 
 def order_success_view(request, reference):
+    if reference not in request.session.get("placed_orders", []):
+        raise Http404("Order not found")
     order = get_object_or_404(
         OrderRequest.objects.prefetch_related("items"), reference=reference)
     return render(request, "main/order_success.html", {"order": order})
