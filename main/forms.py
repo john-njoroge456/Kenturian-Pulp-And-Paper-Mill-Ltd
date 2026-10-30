@@ -56,6 +56,7 @@ CONTACT_MESSAGE_MIN = 10
 CONTACT_MESSAGE_MAX = 500
 MAX_LINKS = 2
 CV_MAX_MB = 5
+LPO_MAX_MB = 10
 # First bytes of real PDF / DOCX / DOC files, so a renamed .exe can't pass as a CV
 CV_SIGNATURES = {
     ".pdf": (b"%PDF",),
@@ -192,7 +193,7 @@ class OrderRequestForm(forms.ModelForm):
 
     def clean_lpo_file(self):
         uploaded = self.cleaned_data.get("lpo_file")
-        validate_upload(uploaded)
+        validate_upload(uploaded, max_mb=LPO_MAX_MB)
         return uploaded
 
     def full_clean(self):
