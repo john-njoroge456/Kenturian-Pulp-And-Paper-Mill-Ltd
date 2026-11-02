@@ -503,14 +503,24 @@ document.addEventListener('DOMContentLoaded', function () {
     var focusedFirst = false;
 
     function clearFieldError(el) {
+      if (!el.classList) return;
       el.classList.remove('is-invalid');
       var next = el.nextElementSibling;
       while (next) {
-        if (next.classList && next.classList.contains('client-error')) { next.remove(); break; }
-        next = next.nextElementSibling;
+        // Stop at the next field so we never clear another field's message
+        if (next.matches('input, select, textarea, label') ||
+            next.querySelector('input, select, textarea')) break;
+        var after = next.nextElementSibling;
+        if (next.classList.contains('client-error') ||
+            next.classList.contains('errorlist')) next.remove();
+        next = after;
+      }
+      // Drop the item's red marker once none of its fields has an error
+      var row = el.closest('[data-item-row]');
+      if (row && !row.querySelector('.is-invalid, .errorlist, .client-error')) {
+        row.classList.remove('has-error');
       }
     }
-
     function messageFor(el) {
       var v = el.validity;
       if (v.valueMissing) {
@@ -548,15 +558,23 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }, true);
 
-    orderForm.addEventListener('input', function (e) { clearFieldError(e.target); });
-    orderForm.addEventListener('change', function (e) { clearFieldError(e.target); });
+      orderForm.addEventListener('input', function (e) { clearFieldError(e.target); });
+        orderForm.addEventListener('change', function (e) {
+        clearFieldError(e.target);
+        // A new item resets the colour by code, so clear the old colour messages too
+        if (e.target.name && /-item_description$/.test(e.target.name)) {
+          var row = e.target.closest('[data-item-row]');
+          if (row) row.querySelectorAll('[name$="-color"], [name$="-color_other"]')
+                      .forEach(clearFieldError);
+        }
+      });
 
-        var submitBtn = orderForm.querySelector('[type="submit"]');
-    if (submitBtn) submitBtn.addEventListener('click', function () {
-      focusedFirst = false;
-      flagInvalidRows();
-    });
-  }
+          var submitBtn = orderForm.querySelector('[type="submit"]');
+      if (submitBtn) submitBtn.addEventListener('click', function () {
+        focusedFirst = false;
+        flagInvalidRows();
+      });
+    }
 
   // --- Bring the error summary into view ---
   var summary = document.getElementById('formErrorSummary');
