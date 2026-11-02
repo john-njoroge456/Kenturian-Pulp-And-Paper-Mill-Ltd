@@ -349,6 +349,14 @@ class OrderItemForm(forms.ModelForm):
 
 
 class BaseOrderItemFormSet(BaseInlineFormSet):
+    def _construct_form(self, i, **kwargs):
+        form = super()._construct_form(i, **kwargs)
+        # The first item must always be filled in, so let the browser
+        # check it even without JavaScript (Django turns this off for formsets).
+        if i < self.min_num:
+            form.use_required_attribute = True
+        return form
+
     def clean(self):
         super().clean()
         filled = [f for f in self.forms if f.has_changed()]

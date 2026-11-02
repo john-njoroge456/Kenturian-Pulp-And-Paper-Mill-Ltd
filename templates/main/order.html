@@ -66,7 +66,21 @@
           <template id="itemRowTemplate">
             {% include "main/_order_item_row.html" with item=formset.empty_form num="" %}
           </template>
-
+          <noscript>
+            <style>
+              #addItemBtn,
+              .order-item-head-actions,
+              .order-item-editing,
+              #orderRecapStrip { display: none !important; }
+            </style>
+          </noscript>
+                    <noscript>
+            <div class="alert alert-warning small mt-3 mb-0">
+              <strong>JavaScript is turned off, so this form takes one item.</strong>
+              To order more, list the other items in Additional Notes (product, colour, length, GSM, quantity).
+              Colours: Test Liner is Brown only, Tissue is White only, MG Cover is not available in White.
+            </div>
+          </noscript>
                     <button type="button" class="add-item-tile" id="addItemBtn">
             <span><i class="bi bi-plus-circle me-2"></i><span id="addItemLabel">Add another item</span></span>
             <span class="add-item-count" id="itemCountNote"></span>
