@@ -56,6 +56,7 @@ CONTACT_MESSAGE_MIN = 10
 CONTACT_MESSAGE_MAX = 500
 MAX_LINKS = 2
 CV_MAX_MB = 5
+LPO_MAX_MB = 10
 # First bytes of real PDF / DOCX / DOC files, so a renamed .exe can't pass as a CV
 CV_SIGNATURES = {
     ".pdf": (b"%PDF",),
@@ -192,7 +193,7 @@ class OrderRequestForm(forms.ModelForm):
 
     def clean_lpo_file(self):
         uploaded = self.cleaned_data.get("lpo_file")
-        validate_upload(uploaded)
+        validate_upload(uploaded, max_mb=LPO_MAX_MB)
         return uploaded
 
     def full_clean(self):
@@ -348,6 +349,14 @@ class OrderItemForm(forms.ModelForm):
 
 
 class BaseOrderItemFormSet(BaseInlineFormSet):
+    def _construct_form(self, i, **kwargs):
+        form = super()._construct_form(i, **kwargs)
+        # The first item must always be filled in, so let the browser
+        # check it even without JavaScript (Django turns this off for formsets).
+        if i < self.min_num:
+            form.use_required_attribute = True
+        return form
+
     def clean(self):
         super().clean()
         filled = [f for f in self.forms if f.has_changed()]

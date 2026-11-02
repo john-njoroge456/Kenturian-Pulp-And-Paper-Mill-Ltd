@@ -66,7 +66,21 @@
           <template id="itemRowTemplate">
             {% include "main/_order_item_row.html" with item=formset.empty_form num="" %}
           </template>
-
+          <noscript>
+            <style>
+              #addItemBtn,
+              .order-item-head-actions,
+              .order-item-editing,
+              #orderRecapStrip { display: none !important; }
+            </style>
+          </noscript>
+                    <noscript>
+            <div class="alert alert-warning small mt-3 mb-0">
+              <strong>JavaScript is turned off, so this form takes one item.</strong>
+              To order more, list the other items in Additional Notes (product, colour, length, GSM, quantity).
+              Colours: Test Liner is Brown only, Tissue is White only, MG Cover is not available in White.
+            </div>
+          </noscript>
                     <button type="button" class="add-item-tile" id="addItemBtn">
             <span><i class="bi bi-plus-circle me-2"></i><span id="addItemLabel">Add another item</span></span>
             <span class="add-item-count" id="itemCountNote"></span>
@@ -124,10 +138,16 @@
           <label for="id_lpo_file"><i class="bi bi-paperclip"></i> Attach LPO (optional: PDF, JPG, PNG or Word, max 10 MB)</label>
           {{ form.lpo_file }}
           {{ form.lpo_file.errors }}
+          {% if form.is_bound and form.files.lpo_file and not form.lpo_file.errors %}
+            <div id="lpoReattach" class="text-danger small mt-1" role="alert">
+              Your LPO ({{ form.files.lpo_file.name }}) wasn't kept because the form had errors. Please attach it again.
+            </div>
+          {% endif %}
 
           <label for="id_notes"><i class="bi bi-chat-left-text"></i> Additional Notes</label>
           {{ form.notes }}
           {{ form.notes.errors }}
+          
 
           <!-- Live recap, right before submit -->
           <div class="order-recap mt-4" id="orderRecapStrip">
@@ -311,6 +331,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // --- Colour rules for one row (fixed and blocked colours come from forms.py) ---
   function setupRow(row) {
+    row.querySelectorAll('[name$="-item_description"], [name$="-length"], [name$="-gsm"], [name$="-quantity"]')
+    .forEach(function (el) { el.required = true; });
     var itemField = row.querySelector('.item-description');
     var colorField = row.querySelector('.item-color');
     var otherWrap = row.querySelector('.color-other-wrap');
@@ -492,6 +514,10 @@ document.addEventListener('DOMContentLoaded', function () {
         fileMsg.textContent = "'" + f.name + "' is " + (f.size / 1000000).toFixed(1) + ' MB. The maximum is 10 MB, so please compress it or upload a smaller file.';
         lpo.value = '';
       }
+            if (lpo.value) {
+        var re = document.getElementById('lpoReattach');
+        if (re) re.remove();
+      }
     });
   }
 
@@ -501,14 +527,24 @@ document.addEventListener('DOMContentLoaded', function () {
     var focusedFirst = false;
 
     function clearFieldError(el) {
+      if (!el.classList) return;
       el.classList.remove('is-invalid');
       var next = el.nextElementSibling;
       while (next) {
-        if (next.classList && next.classList.contains('client-error')) { next.remove(); break; }
-        next = next.nextElementSibling;
+        // Stop at the next field so we never clear another field's message
+        if (next.matches('input, select, textarea, label') ||
+            next.querySelector('input, select, textarea')) break;
+        var after = next.nextElementSibling;
+        if (next.classList.contains('client-error') ||
+            next.classList.contains('errorlist')) next.remove();
+        next = after;
+      }
+      // Drop the item's red marker once none of its fields has an error
+      var row = el.closest('[data-item-row]');
+      if (row && !row.querySelector('.is-invalid, .errorlist, .client-error')) {
+        row.classList.remove('has-error');
       }
     }
-
     function messageFor(el) {
       var v = el.validity;
       if (v.valueMissing) {
@@ -546,15 +582,32 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }, true);
 
-    orderForm.addEventListener('input', function (e) { clearFieldError(e.target); });
-    orderForm.addEventListener('change', function (e) { clearFieldError(e.target); });
-
-        var submitBtn = orderForm.querySelector('[type="submit"]');
-    if (submitBtn) submitBtn.addEventListener('click', function () {
-      focusedFirst = false;
-      flagInvalidRows();
+      orderForm.addEventListener('input', function (e) { clearFieldError(e.target); });
+        orderForm.addEventListener('change', function (e) {
+        clearFieldError(e.target);
+        // A new item resets the colour by code, so clear the old colour messages too
+        if (e.target.name && /-item_description$/.test(e.target.name)) {
+          var row = e.target.closest('[data-item-row]');
+          if (row) row.querySelectorAll('[name$="-color"], [name$="-color_other"]')
+                      .forEach(clearFieldError);
+        }
+      });
+    orderForm.addEventListener('submit', function (e) {
+      if (!lpo || lpo.files.length) return;
+      var rejected = fileMsg && fileMsg.textContent.trim();
+      var reattach = document.getElementById('lpoReattach');
+      if ((rejected || reattach) &&
+          !confirm("Your LPO isn't attached. Send the order without it?\n\nPress Cancel to attach it first.")) {
+        e.preventDefault();
+        lpo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     });
-  }
+          var submitBtn = orderForm.querySelector('[type="submit"]');
+      if (submitBtn) submitBtn.addEventListener('click', function () {
+        focusedFirst = false;
+        flagInvalidRows();
+      });
+    }
 
   // --- Bring the error summary into view ---
   var summary = document.getElementById('formErrorSummary');
