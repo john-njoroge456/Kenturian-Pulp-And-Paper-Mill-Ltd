@@ -124,10 +124,16 @@
           <label for="id_lpo_file"><i class="bi bi-paperclip"></i> Attach LPO (optional: PDF, JPG, PNG or Word, max 10 MB)</label>
           {{ form.lpo_file }}
           {{ form.lpo_file.errors }}
+          {% if form.is_bound and form.files.lpo_file and not form.lpo_file.errors %}
+            <div id="lpoReattach" class="text-danger small mt-1" role="alert">
+              Your LPO ({{ form.files.lpo_file.name }}) wasn't kept because the form had errors. Please attach it again.
+            </div>
+          {% endif %}
 
           <label for="id_notes"><i class="bi bi-chat-left-text"></i> Additional Notes</label>
           {{ form.notes }}
           {{ form.notes.errors }}
+          
 
           <!-- Live recap, right before submit -->
           <div class="order-recap mt-4" id="orderRecapStrip">
@@ -494,6 +500,10 @@ document.addEventListener('DOMContentLoaded', function () {
         fileMsg.textContent = "'" + f.name + "' is " + (f.size / 1000000).toFixed(1) + ' MB. The maximum is 10 MB, so please compress it or upload a smaller file.';
         lpo.value = '';
       }
+            if (lpo.value) {
+        var re = document.getElementById('lpoReattach');
+        if (re) re.remove();
+      }
     });
   }
 
@@ -568,7 +578,16 @@ document.addEventListener('DOMContentLoaded', function () {
                       .forEach(clearFieldError);
         }
       });
-
+    orderForm.addEventListener('submit', function (e) {
+      if (!lpo || lpo.files.length) return;
+      var rejected = fileMsg && fileMsg.textContent.trim();
+      var reattach = document.getElementById('lpoReattach');
+      if ((rejected || reattach) &&
+          !confirm("Your LPO isn't attached. Send the order without it?\n\nPress Cancel to attach it first.")) {
+        e.preventDefault();
+        lpo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
           var submitBtn = orderForm.querySelector('[type="submit"]');
       if (submitBtn) submitBtn.addEventListener('click', function () {
         focusedFirst = false;
