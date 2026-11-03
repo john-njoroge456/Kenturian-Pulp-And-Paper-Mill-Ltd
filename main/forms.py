@@ -1,5 +1,6 @@
 import json
 import re
+import uuid
 from datetime import timedelta
 import os
 
@@ -9,7 +10,7 @@ from django.utils import timezone
 
 
 from .models import OrderRequest, OrderItem, OrderItemOption
-from .validators import validate_upload
+from .validators import clean_upload_name, normalize_phone, validate_upload
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory, BaseInlineFormSet
 
@@ -45,6 +46,7 @@ LIMITS = {
 NOTES_MAX = 500         # characters allowed in Additional Notes
 MAX_DELIVERY_DAYS = 60    # furthest ahead a client can ask for delivery
 MAX_ITEMS = 10
+TEXT_MIN = 2    # characters for company, contact person and delivery location
 INVALID_MESSAGES = {
     "length": "Enter the length as a number in millimetres, e.g. 1500.",
     "gsm": "Enter the GSM as a whole number, e.g. 80.",
@@ -64,8 +66,8 @@ CV_SIGNATURES = {
     ".doc": (b"\xd0\xcf\x11\xe0",),
 }
 NAME_RE = re.compile(r"^[^\W\d_][^\W\d_ .'\-]*(?:[ .'\-]+[^\W\d_]+)*\.?$")
-PHONE_RE = re.compile(r"^\+?\d{9,15}$")
 LINK_RE = re.compile(r"(https?://|www\.)", re.IGNORECASE)
+TOKEN_RE = re.compile(r"[0-9a-f]{32}")
 
 
 def range_message(name):
@@ -77,8 +79,27 @@ def range_message(name):
     )
 
 
+def clean_text(value, label):
+    """Collapse spaces, then require TEXT_MIN characters and at least one letter."""
+    text = " ".join((value or "").split())
+    if not text:
+        return text
+    if len(text) < TEXT_MIN:
+        raise forms.ValidationError(
+            f"{label} must be at least {TEXT_MIN} characters long.")
+    if not re.search(r"[^\W\d_]", text):
+        raise forms.ValidationError(
+            f"{label} must include at least one letter, not only numbers or symbols.")
+    return text
+
+
 class OrderRequestForm(forms.ModelForm):
     """Shared order details: who is ordering, delivery, LPO and notes."""
+    # autocomplete=off stops the browser refilling an old token into a fresh form
+    submission_token = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(attrs={"autocomplete": "off"}),
+    )
 
     class Meta:
         model = OrderRequest
@@ -112,6 +133,8 @@ class OrderRequestForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self.fields["submission_token"].initial = uuid.uuid4().hex
 
         for name, field in self.fields.items():
             label = field.label or name.replace("_", " ").capitalize()
@@ -125,44 +148,22 @@ class OrderRequestForm(forms.ModelForm):
         date_attrs["max"] = (
             today + timedelta(days=MAX_DELIVERY_DAYS)).isoformat()
 
+    def clean_submission_token(self):
+        # A missing or malformed token just skips the duplicate check
+        token = self.cleaned_data.get("submission_token") or ""
+        return token if TOKEN_RE.fullmatch(token) else None
+
+    def clean_company_name(self):
+        return clean_text(self.cleaned_data.get("company_name"), "Company name")
+
+    def clean_contact_person(self):
+        return clean_text(self.cleaned_data.get("contact_person"), "Contact person")
+
+    def clean_delivery_location(self):
+        return clean_text(self.cleaned_data.get("delivery_location"), "Delivery location")
+
     def clean_phone(self):
-        raw = (self.cleaned_data.get("phone") or "").strip()
-        if not raw:
-            return raw
-        if not re.fullmatch(r"\+?[0-9\s\-().]+", raw):
-            raise forms.ValidationError(
-                "The phone number can only contain digits, spaces, dashes and a leading +. "
-                "Please remove any letters or symbols."
-            )
-        digits = re.sub(r"\D", "", raw)
-
-        if raw.startswith("+") and not digits.startswith("254"):
-            if not 8 <= len(digits) <= 15:
-                raise forms.ValidationError(
-                    "International numbers need 8 to 15 digits including the country code, "
-                    "e.g. +256 700 123 456."
-                )
-            return "+" + digits
-
-        if digits.startswith("254"):
-            if len(digits) != 12:
-                raise forms.ValidationError(
-                    "A Kenyan number starting with +254 needs 9 digits after the code, "
-                    "e.g. +254 712 345 678."
-                )
-            return "+" + digits
-
-        if digits.startswith("0"):
-            if len(digits) != 10:
-                raise forms.ValidationError(
-                    "A Kenyan number starting with 0 must have 10 digits, e.g. 0712 345 678."
-                )
-            return "+254" + digits[1:]
-
-        raise forms.ValidationError(
-            "Start the number with 0 (e.g. 0712 345 678) or with the country code "
-            "(e.g. +254 712 345 678)."
-        )
+        return normalize_phone(self.cleaned_data.get("phone"))
 
     def clean_notes(self):
         text = (self.cleaned_data.get("notes")
@@ -194,6 +195,8 @@ class OrderRequestForm(forms.ModelForm):
     def clean_lpo_file(self):
         uploaded = self.cleaned_data.get("lpo_file")
         validate_upload(uploaded, max_mb=LPO_MAX_MB)
+        if uploaded:
+            uploaded.name = clean_upload_name(uploaded.name)
         return uploaded
 
     def full_clean(self):
@@ -519,7 +522,10 @@ class JobApplicationForm(forms.Form):
         widget=forms.TextInput(attrs={"class": "form-control", "autocomplete": "tel",
                                       "placeholder": "e.g. 0712 345 678"}),
         error_messages={
-            "required": "Please enter a phone number we can reach you on."},
+            "required": "Please enter a phone number we can reach you on.",
+            "max_length": "That phone number is too long. Please enter it as "
+                          "0712 345 678 or +254 712 345 678.",
+        },
     )
     message = forms.CharField(
         min_length=20, max_length=2000,
@@ -553,13 +559,7 @@ class JobApplicationForm(forms.Form):
         return name
 
     def clean_phone(self):
-        raw = self.cleaned_data["phone"]
-        phone = re.sub(r"[\s\-()]", "", raw)
-        if not PHONE_RE.match(phone):
-            raise ValidationError(
-                "Please enter a valid phone number: 9 to 15 digits, optionally starting with +, "
-                "e.g. 0712 345 678 or +254 712 345 678.")
-        return phone
+        return normalize_phone(self.cleaned_data.get("phone"))
 
     def clean_message(self):
         message = self.cleaned_data["message"].strip()
@@ -586,6 +586,7 @@ class JobApplicationForm(forms.Form):
             raise ValidationError(
                 f"This file doesn't look like a genuine {ext} document. "
                 "Please save or export your CV again and re-upload it.")
+        f.name = clean_upload_name(f.name)
         return f
 
     def clean_website(self):

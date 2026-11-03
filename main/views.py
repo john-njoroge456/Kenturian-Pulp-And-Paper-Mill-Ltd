@@ -1,6 +1,8 @@
 import logging
 import mimetypes
 import os
+from django.contrib.humanize.templatetags.humanize import intcomma
+from django.template.defaultfilters import date as date_filter, floatformat
 from django.template.loader import render_to_string
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
@@ -8,7 +10,9 @@ from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.utils.text import Truncator
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.contrib import messages
+from django.views.decorators.cache import never_cache
+from django.db import IntegrityError, transaction
 from .models import OrderRequest
 from .forms import OrderRequestForm, OrderItemFormSet, MAX_ITEMS
 from django.http import Http404
@@ -25,17 +29,43 @@ logger = logging.getLogger(__name__)
 
 def _order_item_lines(items):
     return "\n".join(
-        f"  {n}. {i.item_description} | Colour: {i.color or '-'} | "
-        f"Length: {i.length} mm | GSM: {i.gsm} | Qty: {i.quantity} kg"
+        f"  {n}. {i.item_description} | Colour: {i.color or '—'} | "
+        f"Length: {floatformat(i.length, -2)} mm | GSM: {i.gsm} | "
+        f"Qty: {intcomma(i.quantity)} kg"
         for n, i in enumerate(items, 1)
     )
 
 
+def _order_for_token(token):
+    if not token:
+        return None
+    return OrderRequest.objects.filter(submission_token=token).first()
+
+
+def _already_placed(request, order):
+    # Only the browser that placed the order may see it (FX-01)
+    if order.reference not in request.session.get("placed_orders", []):
+        return redirect(reverse("main:order"))
+    messages.info(
+        request,
+        "This order was already sent, so it wasn't submitted again. "
+        "To send a new or changed order, use Place Another Order below.")
+    return redirect(reverse("main:order_success", args=[order.reference]))
+
+
+# no-store plus autocomplete="off" on the form: Back either restores the exact
+# page (old token, blocked) or loads a blank form with a new token
+@never_cache
 def order_request_view(request):
     hero_image = GalleryImage.objects.filter(
         category='order_hero').order_by("-uploaded_at").first()
 
     if request.method == "POST":
+        # A form already sent once (Back, then Submit) goes to its confirmation
+        existing = _order_for_token(request.POST.get("submission_token"))
+        if existing:
+            return _already_placed(request, existing)
+
         form = OrderRequestForm(request.POST, request.FILES)
         formset = OrderItemFormSet(
             request.POST, instance=OrderRequest(), prefix="items")
@@ -43,13 +73,24 @@ def order_request_view(request):
         items_ok = formset.is_valid()   # run both so every error shows at once
 
         if form_ok and items_ok:
-            with transaction.atomic():
-                order = form.save()
-                formset.instance = order
-                items = formset.save(commit=False)
-                for position, item in enumerate(items, start=1):
-                    item.position = position
-                    item.save()
+            token = form.cleaned_data["submission_token"]
+            # Caught outside atomic() so the rollback finishes before the lookup
+            try:
+                with transaction.atomic():
+                    order = form.save(commit=False)
+                    order.submission_token = token
+                    order.save()
+                    formset.instance = order
+                    items = formset.save(commit=False)
+                    for position, item in enumerate(items, start=1):
+                        item.position = position
+                        item.save()
+            except IntegrityError:
+                # Same form sent twice at once: the other request saved it
+                existing = _order_for_token(token)
+                if not existing:
+                    raise
+                return _already_placed(request, existing)
 
             items = list(order.items.all())
             item_lines = _order_item_lines(items)
@@ -61,15 +102,27 @@ def order_request_view(request):
                 "emails/order_summary.html", {**email_ctx, "for_client": True})
             subject = (f"New order request — {order.company_name} — "
                        f"{len(items)} item{'s' if len(items) != 1 else ''} (Ref {order.reference})")
-            message = (
+            # Plain-text bodies mirror emails/order_summary.html, using the
+            # same filters so values read the same in both parts.
+            summary_text = (
                 f"Reference: {order.reference}\n"
                 f"Items ({len(items)}):\n{item_lines}\n"
-                f"Total quantity: {total_kg} kg\n\n"
-                f"Delivery location: {order.delivery_location or '-'} | "
-                f"Preferred date: {order.preferred_delivery_date or '-'}\n"
-                f"Contact: {order.contact_person}, {order.phone}, {order.email}\n"
-                f"Notes: {order.notes or '-'}\n"
-                f"LPO attached: {'Yes' if order.lpo_file else 'No'}"
+                f"Total quantity: {intcomma(total_kg)} kg\n\n"
+                f"Delivery location: {order.delivery_location or '—'}\n"
+                f"Preferred date: "
+                f"{date_filter(order.preferred_delivery_date, 'd M Y') or '—'}\n"
+            )
+            notes_text = f"Notes: {order.notes or '—'}\n"
+            message = (
+                f"{order.company_name} has placed a new order request.\n\n"
+                f"{summary_text}"
+                f"Contact: {order.contact_person}\n"
+                f"Phone: {order.phone}\n"
+                f"Email: {order.email}\n"
+                f"LPO attached: "
+                f"{'Yes (see attachment)' if order.lpo_file else 'No'}\n"
+                f"{notes_text}\n"
+                f"Reply to this email to respond to {order.contact_person} directly."
             )
             try:
                 staff_email = EmailMultiAlternatives(
@@ -89,12 +142,9 @@ def order_request_view(request):
             client_subject = f"Your order request {order.reference} — Kenturian Pulp & Paper Mills Limited"
             client_message = (
                 f"Hi {order.contact_person},\n\n"
-                f"Thanks for your order request — here's a copy for your records.\n\n"
-                f"Reference: {order.reference}\n"
-                f"Items ({len(items)}):\n{item_lines}\n"
-                f"Total quantity: {total_kg} kg\n\n"
-                f"Delivery location: {order.delivery_location or '-'} | "
-                f"Preferred date: {order.preferred_delivery_date or '-'}\n\n"
+                f"Thanks for your order request. Here's a copy for your records.\n\n"
+                f"{summary_text}"
+                f"{notes_text}\n"
                 f"Our team will review your request and follow up shortly. "
                 f"Please quote reference {order.reference} in any correspondence.\n\n"
                 f"— Kenturian Pulp & Paper Mills Limited"

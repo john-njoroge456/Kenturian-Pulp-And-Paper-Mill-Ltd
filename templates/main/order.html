@@ -29,8 +29,9 @@
         <h3 class="contact-form-title mb-1">Order Details</h3>
         <p class="contact-form-subtitle mb-4">Fields marked with an asterisk are required.</p>
 
-        <form method="post" enctype="multipart/form-data" class="application-form" id="orderForm">
+        <form method="post" enctype="multipart/form-data" class="application-form" id="orderForm" autocomplete="off">
           {% csrf_token %}
+          {{ form.submission_token }}
           {{ formset.management_form }}
 
           {% if form.errors or formset.total_error_count %}
@@ -122,7 +123,7 @@
 
           <div class="row">
             <div class="col-md-6">
-              <label for="id_delivery_location"><i class="bi bi-geo-alt"></i> Delivery Location</label>
+              <label for="id_delivery_location"><i class="bi bi-geo-alt"></i> Delivery Location *</label>
               {{ form.delivery_location }}
               {{ form.delivery_location.errors }}
             </div>

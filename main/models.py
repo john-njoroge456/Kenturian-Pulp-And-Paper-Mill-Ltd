@@ -30,7 +30,7 @@ class OrderRequest(models.Model):
     contact_person = models.CharField(max_length=150)
     phone = models.CharField(max_length=30)
     email = models.EmailField()
-    delivery_location = models.CharField(max_length=200, blank=True)
+    delivery_location = models.CharField(max_length=200)
     preferred_delivery_date = models.DateField(null=True, blank=True)
 
     # Attachments / notes
@@ -44,6 +44,9 @@ class OrderRequest(models.Model):
     client_email_sent = models.BooleanField(
         default=False, help_text="Whether the confirmation copy reached the client's email")
     created_at = models.DateTimeField(auto_now_add=True)
+    # One per order form, so a resubmitted form (Back, double submit) is not saved twice
+    submission_token = models.CharField(
+        max_length=32, unique=True, null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ["-created_at"]
