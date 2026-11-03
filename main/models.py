@@ -30,7 +30,7 @@ class OrderRequest(models.Model):
     contact_person = models.CharField(max_length=150)
     phone = models.CharField(max_length=30)
     email = models.EmailField()
-    delivery_location = models.CharField(max_length=200, blank=True)
+    delivery_location = models.CharField(max_length=200)
     preferred_delivery_date = models.DateField(null=True, blank=True)
 
     # Attachments / notes
