@@ -10,7 +10,9 @@ from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.utils.text import Truncator
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.contrib import messages
+from django.views.decorators.cache import never_cache
+from django.db import IntegrityError, transaction
 from .models import OrderRequest
 from .forms import OrderRequestForm, OrderItemFormSet, MAX_ITEMS
 from django.http import Http404
@@ -34,11 +36,36 @@ def _order_item_lines(items):
     )
 
 
+def _order_for_token(token):
+    if not token:
+        return None
+    return OrderRequest.objects.filter(submission_token=token).first()
+
+
+def _already_placed(request, order):
+    # Only the browser that placed the order may see it (FX-01)
+    if order.reference not in request.session.get("placed_orders", []):
+        return redirect(reverse("main:order"))
+    messages.info(
+        request,
+        "This order was already sent, so it wasn't submitted again. "
+        "To send a new or changed order, use Place Another Order below.")
+    return redirect(reverse("main:order_success", args=[order.reference]))
+
+
+# no-store plus autocomplete="off" on the form: Back either restores the exact
+# page (old token, blocked) or loads a blank form with a new token
+@never_cache
 def order_request_view(request):
     hero_image = GalleryImage.objects.filter(
         category='order_hero').order_by("-uploaded_at").first()
 
     if request.method == "POST":
+        # A form already sent once (Back, then Submit) goes to its confirmation
+        existing = _order_for_token(request.POST.get("submission_token"))
+        if existing:
+            return _already_placed(request, existing)
+
         form = OrderRequestForm(request.POST, request.FILES)
         formset = OrderItemFormSet(
             request.POST, instance=OrderRequest(), prefix="items")
@@ -46,13 +73,24 @@ def order_request_view(request):
         items_ok = formset.is_valid()   # run both so every error shows at once
 
         if form_ok and items_ok:
-            with transaction.atomic():
-                order = form.save()
-                formset.instance = order
-                items = formset.save(commit=False)
-                for position, item in enumerate(items, start=1):
-                    item.position = position
-                    item.save()
+            token = form.cleaned_data["submission_token"]
+            # Caught outside atomic() so the rollback finishes before the lookup
+            try:
+                with transaction.atomic():
+                    order = form.save(commit=False)
+                    order.submission_token = token
+                    order.save()
+                    formset.instance = order
+                    items = formset.save(commit=False)
+                    for position, item in enumerate(items, start=1):
+                        item.position = position
+                        item.save()
+            except IntegrityError:
+                # Same form sent twice at once: the other request saved it
+                existing = _order_for_token(token)
+                if not existing:
+                    raise
+                return _already_placed(request, existing)
 
             items = list(order.items.all())
             item_lines = _order_item_lines(items)

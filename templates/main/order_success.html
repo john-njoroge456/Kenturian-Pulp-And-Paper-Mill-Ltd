@@ -19,6 +19,9 @@
   <!-- Confirmation message -->
   <div class="application-form-wrap">
     <div class="application-success-card text-center">
+      {% for message in messages %}
+        <div class="alert alert-info text-start" role="status">{{ message }}</div>
+      {% endfor %}
       <div class="success-check">
         <i class="bi bi-check-lg"></i>
       </div>

@@ -29,8 +29,9 @@
         <h3 class="contact-form-title mb-1">Order Details</h3>
         <p class="contact-form-subtitle mb-4">Fields marked with an asterisk are required.</p>
 
-        <form method="post" enctype="multipart/form-data" class="application-form" id="orderForm">
+        <form method="post" enctype="multipart/form-data" class="application-form" id="orderForm" autocomplete="off">
           {% csrf_token %}
+          {{ form.submission_token }}
           {{ formset.management_form }}
 
           {% if form.errors or formset.total_error_count %}

@@ -1,5 +1,6 @@
 import json
 import re
+import uuid
 from datetime import timedelta
 import os
 
@@ -66,6 +67,7 @@ CV_SIGNATURES = {
 }
 NAME_RE = re.compile(r"^[^\W\d_][^\W\d_ .'\-]*(?:[ .'\-]+[^\W\d_]+)*\.?$")
 LINK_RE = re.compile(r"(https?://|www\.)", re.IGNORECASE)
+TOKEN_RE = re.compile(r"[0-9a-f]{32}")
 
 
 def range_message(name):
@@ -93,6 +95,11 @@ def clean_text(value, label):
 
 class OrderRequestForm(forms.ModelForm):
     """Shared order details: who is ordering, delivery, LPO and notes."""
+    # autocomplete=off stops the browser refilling an old token into a fresh form
+    submission_token = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(attrs={"autocomplete": "off"}),
+    )
 
     class Meta:
         model = OrderRequest
@@ -126,6 +133,8 @@ class OrderRequestForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self.fields["submission_token"].initial = uuid.uuid4().hex
 
         for name, field in self.fields.items():
             label = field.label or name.replace("_", " ").capitalize()
@@ -138,6 +147,11 @@ class OrderRequestForm(forms.ModelForm):
         date_attrs["min"] = today.isoformat()
         date_attrs["max"] = (
             today + timedelta(days=MAX_DELIVERY_DAYS)).isoformat()
+
+    def clean_submission_token(self):
+        # A missing or malformed token just skips the duplicate check
+        token = self.cleaned_data.get("submission_token") or ""
+        return token if TOKEN_RE.fullmatch(token) else None
 
     def clean_company_name(self):
         return clean_text(self.cleaned_data.get("company_name"), "Company name")
