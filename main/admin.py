@@ -12,6 +12,7 @@ from django.core.exceptions import PermissionDenied
 from django.template.response import TemplateResponse
 from django.utils.html import format_html
 from .models import LeadershipMember
+from .validators import clean_upload_name
 from .reports import (orders_workbook, xlsx_response, PRESETS, resolve_period,
                       build_order_report, report_workbook, applications_workbook)
 from .models import Product, NewsArticle, GalleryImage, JobPosting, EmployeeStory, NewsCategory, NewsTag, OrderRequest, OrderItem, OrderItemOption, ContactMessage, JobApplication, NewsImage
@@ -89,7 +90,7 @@ class OrderRequestAdmin(admin.ModelAdmin):
         if not order.lpo_file:
             raise Http404
         return FileResponse(order.lpo_file.open("rb"), as_attachment=True,
-                            filename=os.path.basename(order.lpo_file.name))
+                            filename=clean_upload_name(os.path.basename(order.lpo_file.name)))
 
     # ---- Order list with totals + report button ----
     def changelist_view(self, request, extra_context=None):
@@ -331,7 +332,7 @@ class JobApplicationAdmin(admin.ModelAdmin):
         if not application.cv_file:
             raise Http404
         return FileResponse(application.cv_file.open("rb"), as_attachment=True,
-                            filename=os.path.basename(application.cv_file.name))
+                            filename=clean_upload_name(os.path.basename(application.cv_file.name)))
 
 
 admin.site.site_header = "Kenturian Pulp & Paper Mills Limited"

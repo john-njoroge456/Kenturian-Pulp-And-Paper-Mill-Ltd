@@ -9,7 +9,7 @@ from django.utils import timezone
 
 
 from .models import OrderRequest, OrderItem, OrderItemOption
-from .validators import normalize_phone, validate_upload
+from .validators import clean_upload_name, normalize_phone, validate_upload
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory, BaseInlineFormSet
 
@@ -181,6 +181,8 @@ class OrderRequestForm(forms.ModelForm):
     def clean_lpo_file(self):
         uploaded = self.cleaned_data.get("lpo_file")
         validate_upload(uploaded, max_mb=LPO_MAX_MB)
+        if uploaded:
+            uploaded.name = clean_upload_name(uploaded.name)
         return uploaded
 
     def full_clean(self):
@@ -570,6 +572,7 @@ class JobApplicationForm(forms.Form):
             raise ValidationError(
                 f"This file doesn't look like a genuine {ext} document. "
                 "Please save or export your CV again and re-upload it.")
+        f.name = clean_upload_name(f.name)
         return f
 
     def clean_website(self):

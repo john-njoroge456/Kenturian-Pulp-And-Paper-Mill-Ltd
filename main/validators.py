@@ -38,6 +38,14 @@ def validate_upload(uploaded, allowed=(".pdf", ".jpg", ".jpeg", ".png", ".doc", 
         )
 
 
+def clean_upload_name(name):
+    """Drop a repeated extension, e.g. 'LPO.pdf.pdf' -> 'LPO.pdf' (Windows hides extensions)."""
+    root, ext = os.path.splitext(name)
+    while ext and os.path.splitext(root)[1].lower() == ext.lower():
+        root = os.path.splitext(root)[0]
+    return root + ext
+
+
 def normalize_phone(raw):
     """Check a phone number and return it as +<digits> (Kenyan numbers as +254...)."""
     raw = (raw or "").strip()
