@@ -45,6 +45,7 @@ LIMITS = {
 NOTES_MAX = 500         # characters allowed in Additional Notes
 MAX_DELIVERY_DAYS = 60    # furthest ahead a client can ask for delivery
 MAX_ITEMS = 10
+TEXT_MIN = 2    # characters for company, contact person and delivery location
 INVALID_MESSAGES = {
     "length": "Enter the length as a number in millimetres, e.g. 1500.",
     "gsm": "Enter the GSM as a whole number, e.g. 80.",
@@ -74,6 +75,20 @@ def range_message(name):
         f"{title} must be between {low:,}{unit} and {high:,}{unit}. "
         "For anything outside this range, please contact our sales team."
     )
+
+
+def clean_text(value, label):
+    """Collapse spaces, then require TEXT_MIN characters and at least one letter."""
+    text = " ".join((value or "").split())
+    if not text:
+        return text
+    if len(text) < TEXT_MIN:
+        raise forms.ValidationError(
+            f"{label} must be at least {TEXT_MIN} characters long.")
+    if not re.search(r"[^\W\d_]", text):
+        raise forms.ValidationError(
+            f"{label} must include at least one letter, not only numbers or symbols.")
+    return text
 
 
 class OrderRequestForm(forms.ModelForm):
@@ -123,6 +138,15 @@ class OrderRequestForm(forms.ModelForm):
         date_attrs["min"] = today.isoformat()
         date_attrs["max"] = (
             today + timedelta(days=MAX_DELIVERY_DAYS)).isoformat()
+
+    def clean_company_name(self):
+        return clean_text(self.cleaned_data.get("company_name"), "Company name")
+
+    def clean_contact_person(self):
+        return clean_text(self.cleaned_data.get("contact_person"), "Contact person")
+
+    def clean_delivery_location(self):
+        return clean_text(self.cleaned_data.get("delivery_location"), "Delivery location")
 
     def clean_phone(self):
         return normalize_phone(self.cleaned_data.get("phone"))
