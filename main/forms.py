@@ -9,7 +9,7 @@ from django.utils import timezone
 
 
 from .models import OrderRequest, OrderItem, OrderItemOption
-from .validators import validate_upload
+from .validators import normalize_phone, validate_upload
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory, BaseInlineFormSet
 
@@ -64,7 +64,6 @@ CV_SIGNATURES = {
     ".doc": (b"\xd0\xcf\x11\xe0",),
 }
 NAME_RE = re.compile(r"^[^\W\d_][^\W\d_ .'\-]*(?:[ .'\-]+[^\W\d_]+)*\.?$")
-PHONE_RE = re.compile(r"^\+?\d{9,15}$")
 LINK_RE = re.compile(r"(https?://|www\.)", re.IGNORECASE)
 
 
@@ -126,43 +125,7 @@ class OrderRequestForm(forms.ModelForm):
             today + timedelta(days=MAX_DELIVERY_DAYS)).isoformat()
 
     def clean_phone(self):
-        raw = (self.cleaned_data.get("phone") or "").strip()
-        if not raw:
-            return raw
-        if not re.fullmatch(r"\+?[0-9\s\-().]+", raw):
-            raise forms.ValidationError(
-                "The phone number can only contain digits, spaces, dashes and a leading +. "
-                "Please remove any letters or symbols."
-            )
-        digits = re.sub(r"\D", "", raw)
-
-        if raw.startswith("+") and not digits.startswith("254"):
-            if not 8 <= len(digits) <= 15:
-                raise forms.ValidationError(
-                    "International numbers need 8 to 15 digits including the country code, "
-                    "e.g. +256 700 123 456."
-                )
-            return "+" + digits
-
-        if digits.startswith("254"):
-            if len(digits) != 12:
-                raise forms.ValidationError(
-                    "A Kenyan number starting with +254 needs 9 digits after the code, "
-                    "e.g. +254 712 345 678."
-                )
-            return "+" + digits
-
-        if digits.startswith("0"):
-            if len(digits) != 10:
-                raise forms.ValidationError(
-                    "A Kenyan number starting with 0 must have 10 digits, e.g. 0712 345 678."
-                )
-            return "+254" + digits[1:]
-
-        raise forms.ValidationError(
-            "Start the number with 0 (e.g. 0712 345 678) or with the country code "
-            "(e.g. +254 712 345 678)."
-        )
+        return normalize_phone(self.cleaned_data.get("phone"))
 
     def clean_notes(self):
         text = (self.cleaned_data.get("notes")
@@ -519,7 +482,10 @@ class JobApplicationForm(forms.Form):
         widget=forms.TextInput(attrs={"class": "form-control", "autocomplete": "tel",
                                       "placeholder": "e.g. 0712 345 678"}),
         error_messages={
-            "required": "Please enter a phone number we can reach you on."},
+            "required": "Please enter a phone number we can reach you on.",
+            "max_length": "That phone number is too long. Please enter it as "
+                          "0712 345 678 or +254 712 345 678.",
+        },
     )
     message = forms.CharField(
         min_length=20, max_length=2000,
@@ -553,13 +519,7 @@ class JobApplicationForm(forms.Form):
         return name
 
     def clean_phone(self):
-        raw = self.cleaned_data["phone"]
-        phone = re.sub(r"[\s\-()]", "", raw)
-        if not PHONE_RE.match(phone):
-            raise ValidationError(
-                "Please enter a valid phone number: 9 to 15 digits, optionally starting with +, "
-                "e.g. 0712 345 678 or +254 712 345 678.")
-        return phone
+        return normalize_phone(self.cleaned_data.get("phone"))
 
     def clean_message(self):
         message = self.cleaned_data["message"].strip()
