@@ -48,6 +48,12 @@ def _contact_for_token(token):
     return ContactMessage.objects.filter(submission_token=token).first()
 
 
+def _application_for_token(token):
+    if not token:
+        return None
+    return JobApplication.objects.filter(submission_token=token).first()
+
+
 def _already_placed(request, order):
     # Only the browser that placed the order may see it (FX-01)
     if order.reference not in request.session.get("placed_orders", []):
@@ -281,12 +287,26 @@ def index(request):
 
 def _process_application(form, job=None):
     """Save a valid application, then email HR and the applicant.
-    Email failures are logged but never hide a saved application."""
+    Email failures are logged but never hide a saved application.
+    Returns None if the same form was already saved by another request."""
     cd = form.cleaned_data
-    record = JobApplication.objects.create(
+    token = cd["submission_token"]
+    record = JobApplication(
         job=job, name=cd["name"], email=cd["email"],
         phone=cd["phone"], message=cd["message"], cv_file=cd["cv"],
+        submission_token=token,
     )
+    # Caught outside atomic() so the rollback finishes before the lookup
+    try:
+        with transaction.atomic():
+            record.save()
+    except IntegrityError:
+        # Same form sent twice at once: the other request saved it
+        if not _application_for_token(token):
+            raise
+        # The CV was written to disk before the insert failed
+        record.cv_file.delete(save=False)
+        return None
 
     if job:
         subject = f"New job application — {job.title} — {cd['name']} (Ref {record.reference})"
@@ -350,15 +370,24 @@ def _process_application(form, job=None):
     return record
 
 
+# no-store plus autocomplete="off" on the form: Back either restores the exact
+# page (old token, blocked) or loads a blank form with a new token
+@never_cache
 def job_detail_view(request, pk):
     job = get_object_or_404(JobPosting, pk=pk, is_open=True)
     hero_image = GalleryImage.objects.filter(
         category='careers_hero').order_by('-uploaded_at').first()
     if request.method == 'POST':
+        sent_url = reverse('main:job_detail', args=[job.pk]) + '?sent=1'
+        # Checked before validation: Back clears the CV field, and a re-chosen
+        # CV for an already sent form is never stored
+        if _application_for_token(request.POST.get('submission_token')):
+            return redirect(sent_url)
+
         form = JobApplicationForm(request.POST, request.FILES)
         if form.is_valid():
             _process_application(form, job=job)
-            return redirect(reverse('main:job_detail', args=[job.pk]) + '?sent=1')
+            return redirect(sent_url)
     else:
         form = JobApplicationForm()
     sent = request.GET.get('sent') == '1'
@@ -367,14 +396,20 @@ def job_detail_view(request, pk):
     })
 
 
+@never_cache
 def general_application_view(request):
     hero_image = GalleryImage.objects.filter(
         category='careers_hero').order_by('-uploaded_at').first()
     if request.method == 'POST':
+        sent_url = reverse('main:general_application') + '?sent=1'
+        # Same early check as job_detail_view
+        if _application_for_token(request.POST.get('submission_token')):
+            return redirect(sent_url)
+
         form = JobApplicationForm(request.POST, request.FILES)
         if form.is_valid():
             _process_application(form)
-            return redirect(reverse('main:general_application') + '?sent=1')
+            return redirect(sent_url)
     else:
         form = JobApplicationForm()
     sent = request.GET.get('sent') == '1'

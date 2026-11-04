@@ -565,6 +565,21 @@ class JobApplicationForm(forms.Form):
         widget=forms.TextInput(
             attrs={"autocomplete": "off", "tabindex": "-1"}),
     )
+    # autocomplete=off stops the browser refilling an old token into a fresh form
+    submission_token = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(attrs={"autocomplete": "off"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self.fields["submission_token"].initial = uuid.uuid4().hex
+
+    def clean_submission_token(self):
+        # A missing or malformed token just skips the duplicate check
+        token = self.cleaned_data.get("submission_token") or ""
+        return token if TOKEN_RE.fullmatch(token) else None
 
     def clean_name(self):
         name = " ".join(self.cleaned_data["name"].split())

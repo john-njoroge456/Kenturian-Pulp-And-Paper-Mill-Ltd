@@ -1,10 +1,21 @@
+import os
+import shutil
+import tempfile
 from unittest import mock
 
 from django.core import mail
+from django.core.files.storage import FileSystemStorage
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .models import ContactMessage, OrderItemOption, OrderRequest
+from .models import (
+    ContactMessage,
+    JobApplication,
+    JobPosting,
+    OrderItemOption,
+    OrderRequest,
+)
 
 
 class OrderResubmitTests(TestCase):
@@ -212,3 +223,154 @@ class ContactResubmitTests(TestCase):
             response, self.sent_url, fetch_redirect_response=False)
         self.assertEqual(ContactMessage.objects.count(), 1)
         self.assertEqual(len(mail.outbox), 0)
+
+
+class ApplicationResubmitMixin:
+    """FX-32: an application form sent once (Back, then Submit) must not create a
+    second application. Subclasses set up self.url and self.job."""
+
+    job = None
+
+    def setUp(self):
+        self.sent_url = self.url + "?sent=1"
+        # private_storage fixes its location at import, so point the CV field
+        # at a temporary folder instead of the real private_media/
+        self.cv_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.cv_dir, ignore_errors=True)
+        patcher = mock.patch.object(
+            JobApplication._meta.get_field("cv_file"), "storage",
+            FileSystemStorage(location=self.cv_dir))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def stored_cvs(self):
+        return [name for _, _, files in os.walk(self.cv_dir) for name in files]
+
+    def get_token(self, client=None):
+        response = (client or self.client).get(self.url)
+        return response.context["form"]["submission_token"].value()
+
+    def app_data(self, token, message="I have five years of experience running paper machines.",
+                 cv=True):
+        data = {
+            "submission_token": token,
+            "name": "Jane Doe",
+            "email": "jane@example.com",
+            "phone": "0712345678",
+            "message": message,
+            "website": "",
+        }
+        if cv:
+            # A new file each time: an uploaded file is consumed once posted
+            data["cv"] = SimpleUploadedFile(
+                "cv.pdf", b"%PDF-1.4 test cv", content_type="application/pdf")
+        return data
+
+    def test_page_is_not_stored(self):
+        response = self.client.get(self.url)
+        self.assertIn("no-store", response["Cache-Control"])
+
+    def test_form_turns_off_restore(self):
+        response = self.client.get(self.url)
+        self.assertRegex(
+            response.content.decode(),
+            r'<form [^>]*class="application-form"[^>]*autocomplete="off"')
+
+    def test_back_and_resubmit_with_changed_message_does_not_duplicate(self):
+        token = self.get_token()
+        response = self.client.post(self.url, self.app_data(token))
+        self.assertRedirects(response, self.sent_url)
+        record = JobApplication.objects.get()
+        self.assertEqual(record.job, self.job)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(len(mail.outbox[0].attachments), 1)
+        self.assertEqual(len(self.stored_cvs()), 1)
+
+        # Back restores the old form; the applicant edits the message, picks
+        # the CV again and submits
+        response = self.client.post(self.url, self.app_data(
+            token, message="Actually, I would also like to mention my forklift licence."))
+        self.assertRedirects(
+            response, self.sent_url, fetch_redirect_response=False)
+        self.assertEqual(JobApplication.objects.count(), 1)
+        record.refresh_from_db()
+        self.assertIn("paper machines", record.message)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(len(self.stored_cvs()), 1)
+
+        # A fresh form creates a new application
+        new_token = self.get_token()
+        self.assertNotEqual(new_token, token)
+        response = self.client.post(self.url, self.app_data(new_token))
+        self.assertRedirects(response, self.sent_url)
+        self.assertEqual(JobApplication.objects.count(), 2)
+
+    def test_resubmit_without_cv_goes_to_sent(self):
+        # Browsers clear the file field on Back
+        token = self.get_token()
+        self.client.post(self.url, self.app_data(token))
+
+        response = self.client.post(self.url, self.app_data(token, cv=False))
+        self.assertRedirects(
+            response, self.sent_url, fetch_redirect_response=False)
+        self.assertEqual(JobApplication.objects.count(), 1)
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_duplicate_token_from_other_session_shows_no_reference(self):
+        # The sent page shows nothing private, so no session check is needed
+        token = self.get_token()
+        self.client.post(self.url, self.app_data(token))
+
+        other = Client()
+        response = other.post(self.url, self.app_data(token))
+        self.assertRedirects(
+            response, self.sent_url, fetch_redirect_response=False)
+        self.assertEqual(JobApplication.objects.count(), 1)
+        page = other.get(self.sent_url)
+        self.assertNotContains(page, JobApplication.objects.get().reference)
+        self.assertNotContains(page, "APP-")
+
+    def test_invalid_post_keeps_token(self):
+        token = self.get_token()
+        data = self.app_data(token)
+        data["name"] = ""
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["form"]["submission_token"].value(), token)
+        self.assertFalse(JobApplication.objects.exists())
+        self.assertEqual(self.stored_cvs(), [])
+
+    def test_simultaneous_submit_hits_unique_token(self):
+        token = self.get_token()
+        existing = JobApplication.objects.create(
+            job=self.job, name="Jane Doe", email="jane@example.com",
+            phone="0712345678",
+            message="I have five years of experience running paper machines.",
+            cv_file=SimpleUploadedFile("cv.pdf", b"%PDF-1.4 first"),
+            submission_token=token)
+
+        # The other request saves between our lookup and our insert
+        with mock.patch("main.views._application_for_token",
+                        side_effect=[None, existing]):
+            response = self.client.post(self.url, self.app_data(token))
+        self.assertRedirects(
+            response, self.sent_url, fetch_redirect_response=False)
+        self.assertEqual(JobApplication.objects.count(), 1)
+        self.assertEqual(len(mail.outbox), 0)
+        # Only the first request's CV is left on disk
+        self.assertEqual(len(self.stored_cvs()), 1)
+
+
+class JobApplicationResubmitTests(ApplicationResubmitMixin, TestCase):
+    def setUp(self):
+        self.job = JobPosting.objects.create(
+            title="Machine Operator", description="Runs the paper machine.")
+        self.url = reverse("main:job_detail", args=[self.job.pk])
+        super().setUp()
+
+
+class GeneralApplicationResubmitTests(ApplicationResubmitMixin, TestCase):
+    def setUp(self):
+        self.url = reverse("main:general_application")
+        super().setUp()
