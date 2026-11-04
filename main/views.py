@@ -42,6 +42,12 @@ def _order_for_token(token):
     return OrderRequest.objects.filter(submission_token=token).first()
 
 
+def _contact_for_token(token):
+    if not token:
+        return None
+    return ContactMessage.objects.filter(submission_token=token).first()
+
+
 def _already_placed(request, order):
     # Only the browser that placed the order may see it (FX-01)
     if order.reference not in request.session.get("placed_orders", []):
@@ -381,17 +387,34 @@ def product_detail(request, pk):
     return redirect(reverse('main:index') + '#productCarousel', permanent=True)
 
 
+# no-store plus autocomplete="off" on the form: Back either restores the exact
+# page (old token, blocked) or loads a blank form with a new token
+@never_cache
 def contact_view(request):
     hero_image = GalleryImage.objects.filter(
         category='contact_hero').order_by('-uploaded_at').first()
     if request.method == 'POST':
+        # A form already sent once (Back, then Submit) goes to the sent page
+        if _contact_for_token(request.POST.get('submission_token')):
+            return redirect(reverse('main:contact') + '?sent=1')
+
         form = ContactForm(request.POST)
         if form.is_valid():
             cd = form.cleaned_data
-            record = ContactMessage.objects.create(
-                name=cd['name'], email=cd['email'],
-                subject=cd['subject'], message=cd['message'],
-            )
+            token = cd['submission_token']
+            # Caught outside atomic() so the rollback finishes before the lookup
+            try:
+                with transaction.atomic():
+                    record = ContactMessage.objects.create(
+                        name=cd['name'], email=cd['email'],
+                        subject=cd['subject'], message=cd['message'],
+                        submission_token=token,
+                    )
+            except IntegrityError:
+                # Same form sent twice at once: the other request saved it
+                if not _contact_for_token(token):
+                    raise
+                return redirect(reverse('main:contact') + '?sent=1')
             subject = f"New enquiry from {cd['name']} — {cd['subject']} (Ref {record.reference})"
             message = f"Reference: {record.reference}\nFrom: {cd['name']} <{cd['email']}>\n\n{cd['message']}"
             html_staff = render_to_string(

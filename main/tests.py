@@ -4,7 +4,7 @@ from django.core import mail
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .models import OrderItemOption, OrderRequest
+from .models import ContactMessage, OrderItemOption, OrderRequest
 
 
 class OrderResubmitTests(TestCase):
@@ -119,4 +119,96 @@ class OrderResubmitTests(TestCase):
         self.assertRedirects(
             response, self.success_url(existing), fetch_redirect_response=False)
         self.assertEqual(OrderRequest.objects.count(), 1)
+        self.assertEqual(len(mail.outbox), 0)
+
+
+class ContactResubmitTests(TestCase):
+    """FX-32: a contact form sent once (Back, then Submit) must not create a second message."""
+
+    def setUp(self):
+        self.contact_url = reverse("main:contact")
+        self.sent_url = self.contact_url + "?sent=1"
+
+    def get_token(self, client=None):
+        response = (client or self.client).get(self.contact_url)
+        return response.context["form"]["submission_token"].value()
+
+    def contact_data(self, token, message="Please send us a quote for kraft liner rolls."):
+        return {
+            "submission_token": token,
+            "name": "Jane Doe",
+            "email": "jane@example.com",
+            "subject": "Quote request",
+            "message": message,
+            "fax_number": "",
+        }
+
+    def test_contact_page_is_not_stored(self):
+        response = self.client.get(self.contact_url)
+        self.assertIn("no-store", response["Cache-Control"])
+
+    def test_contact_form_turns_off_restore(self):
+        response = self.client.get(self.contact_url)
+        self.assertRegex(
+            response.content.decode(),
+            r'<form [^>]*class="application-form"[^>]*autocomplete="off"')
+
+    def test_back_and_resubmit_with_changed_message_does_not_duplicate(self):
+        token = self.get_token()
+        response = self.client.post(self.contact_url, self.contact_data(token))
+        self.assertRedirects(response, self.sent_url)
+        record = ContactMessage.objects.get()
+        self.assertEqual(len(mail.outbox), 2)
+
+        # Back restores the old form; the visitor edits the message and submits
+        response = self.client.post(self.contact_url, self.contact_data(
+            token, message="Actually, please quote for fluting medium instead."))
+        self.assertRedirects(
+            response, self.sent_url, fetch_redirect_response=False)
+        self.assertEqual(ContactMessage.objects.count(), 1)
+        record.refresh_from_db()
+        self.assertIn("kraft liner", record.message)
+        self.assertEqual(len(mail.outbox), 2)
+
+        # Send Another Message gives a fresh form that creates a new message
+        new_token = self.get_token()
+        self.assertNotEqual(new_token, token)
+        response = self.client.post(self.contact_url, self.contact_data(new_token))
+        self.assertRedirects(response, self.sent_url)
+        self.assertEqual(ContactMessage.objects.count(), 2)
+
+    def test_duplicate_token_from_other_session_redirects_to_sent(self):
+        # The sent page shows nothing private, so no session check is needed
+        token = self.get_token()
+        self.client.post(self.contact_url, self.contact_data(token))
+
+        response = Client().post(self.contact_url, self.contact_data(token))
+        self.assertRedirects(
+            response, self.sent_url, fetch_redirect_response=False)
+        self.assertEqual(ContactMessage.objects.count(), 1)
+
+    def test_invalid_post_keeps_token(self):
+        token = self.get_token()
+        data = self.contact_data(token)
+        data["subject"] = ""
+        response = self.client.post(self.contact_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["form"]["submission_token"].value(), token)
+        self.assertFalse(ContactMessage.objects.exists())
+
+    def test_simultaneous_submit_hits_unique_token(self):
+        token = self.get_token()
+        existing = ContactMessage.objects.create(
+            name="Jane Doe", email="jane@example.com", subject="Quote request",
+            message="Please send us a quote for kraft liner rolls.",
+            submission_token=token)
+
+        # The other request saves between our lookup and our insert
+        with mock.patch("main.views._contact_for_token",
+                        side_effect=[None, existing]):
+            response = self.client.post(self.contact_url, self.contact_data(token))
+        self.assertRedirects(
+            response, self.sent_url, fetch_redirect_response=False)
+        self.assertEqual(ContactMessage.objects.count(), 1)
         self.assertEqual(len(mail.outbox), 0)
