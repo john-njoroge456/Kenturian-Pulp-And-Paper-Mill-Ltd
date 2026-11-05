@@ -23,7 +23,19 @@ Use `.venv313` (Python 3.13, matching CI and the server). Ruff is only installed
 .venv313/bin/python manage.py test main.tests.TestClass.test_name
 ```
 
-There are currently no tests: `manage.py test` finds 0 and exits 0, so a green CI test step proves nothing.
+The tests are in `main/tests.py`, and CI runs them too (`manage.py test`). Run them with:
+
+```bash
+.venv313/bin/python manage.py test main
+```
+
+They catch mail in `mail.outbox` and write CVs to a temporary folder, never to `private_media/`. Coverage:
+
+- Resubmit protection (FX-25, FX-32): Back-then-Submit and simultaneous submits on the order, contact and both careers forms create one record and one set of emails. The pages are served `no-store`, and the forms have `autocomplete="off"`.
+- Contact email length (FX-24): 254 characters are accepted and 255 rejected, and the input has `maxlength="254"`.
+- Honeypots (FX-16): a filled `fax_number` or `website` redirects to `?sent=1`. It saves nothing, sends no email, stores no CV and never shows the value back.
+
+Not covered: the order-form business rules (colours, limits, phone rules), the admin report and Excel exports, the upload signature checks, and JS behaviour. The separate Selenium suite covers the browser.
 
 Ruff is not part of CI, and `ruff check .` currently reports 111 existing errors. Check the files you changed rather than expecting a clean run.
 

@@ -9,6 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
+from .forms import ContactForm, JobApplicationForm
 from .models import (
     ContactMessage,
     JobApplication,
@@ -225,9 +226,93 @@ class ContactResubmitTests(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
 
-class ApplicationResubmitMixin:
-    """FX-32: an application form sent once (Back, then Submit) must not create a
-    second application. Subclasses set up self.url and self.job."""
+class ContactEmailLengthTests(TestCase):
+    """FX-24: the contact email allows 254 characters, like the order and application forms."""
+
+    def data(self, email):
+        return {
+            "name": "Jane Doe",
+            "email": email,
+            "subject": "Quote request",
+            "message": "Please send us a quote for kraft liner rolls.",
+            "fax_number": "",
+        }
+
+    def test_254_characters_accepted(self):
+        email = "a" * 242 + "@example.com"
+        self.assertEqual(len(email), 254)
+        form = ContactForm(data=self.data(email))
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_255_characters_rejected(self):
+        email = "a" * 243 + "@example.com"
+        self.assertEqual(len(email), 255)
+        form = ContactForm(data=self.data(email))
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors["email"],
+            ["Please enter an email address of 254 characters or fewer."])
+
+    def test_input_maxlength_is_254(self):
+        response = self.client.get(reverse("main:contact"))
+        self.assertRegex(
+            response.content.decode(),
+            r'<input [^>]*name="email"[^>]*maxlength="254"')
+
+
+HONEYPOT_MARKER = "hp-bot-7f3a"
+
+
+class ContactHoneypotTests(TestCase):
+    """FX-16: a filled honeypot looks like success, keeps nothing and is never echoed."""
+
+    def setUp(self):
+        self.contact_url = reverse("main:contact")
+        self.sent_url = self.contact_url + "?sent=1"
+
+    def contact_data(self, fax_number=HONEYPOT_MARKER, **overrides):
+        data = {
+            "name": "Jane Doe",
+            "email": "jane@example.com",
+            "subject": "Quote request",
+            "message": "Please send us a quote for kraft liner rolls.",
+            "fax_number": fax_number,
+        }
+        data.update(overrides)
+        return data
+
+    def test_filled_honeypot_redirects_to_sent_and_keeps_nothing(self):
+        response = self.client.post(self.contact_url, self.contact_data())
+        self.assertRedirects(response, self.sent_url)
+        self.assertFalse(ContactMessage.objects.exists())
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_filled_honeypot_with_invalid_fields_still_redirects(self):
+        response = self.client.post(self.contact_url, self.contact_data(name=""))
+        self.assertRedirects(response, self.sent_url)
+        self.assertFalse(ContactMessage.objects.exists())
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_sent_page_does_not_echo_value(self):
+        response = self.client.post(
+            self.contact_url, self.contact_data(), follow=True)
+        self.assertContains(response, "Message Sent!")
+        self.assertNotContains(response, HONEYPOT_MARKER)
+
+    def test_bound_form_never_renders_value(self):
+        form = ContactForm(data=self.contact_data())
+        self.assertFalse(form.is_valid())
+        self.assertNotIn(HONEYPOT_MARKER, str(form["fax_number"]))
+
+    def test_spaces_only_honeypot_is_treated_as_empty(self):
+        response = self.client.post(self.contact_url, self.contact_data(fax_number="   "))
+        self.assertRedirects(response, self.sent_url)
+        self.assertEqual(ContactMessage.objects.count(), 1)
+        self.assertEqual(len(mail.outbox), 2)
+
+
+class ApplicationFormMixin:
+    """Shared setup for the careers form tests. Subclasses set up self.url and self.job."""
 
     job = None
 
@@ -265,6 +350,45 @@ class ApplicationResubmitMixin:
             data["cv"] = SimpleUploadedFile(
                 "cv.pdf", b"%PDF-1.4 test cv", content_type="application/pdf")
         return data
+
+
+class ApplicationHoneypotMixin(ApplicationFormMixin):
+    """FX-16: a filled honeypot looks like success, keeps nothing and is never echoed."""
+
+    def test_filled_honeypot_redirects_to_sent_and_keeps_nothing(self):
+        data = self.app_data(self.get_token())
+        data["website"] = HONEYPOT_MARKER
+        response = self.client.post(self.url, data)
+        self.assertRedirects(response, self.sent_url)
+        self.assertFalse(JobApplication.objects.exists())
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(self.stored_cvs(), [])
+
+    def test_filled_honeypot_with_invalid_fields_still_redirects(self):
+        data = self.app_data(self.get_token())
+        data.update(website=HONEYPOT_MARKER, name="")
+        response = self.client.post(self.url, data)
+        self.assertRedirects(response, self.sent_url)
+        self.assertFalse(JobApplication.objects.exists())
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(self.stored_cvs(), [])
+
+    def test_sent_page_does_not_echo_value(self):
+        data = self.app_data(self.get_token())
+        data["website"] = HONEYPOT_MARKER
+        response = self.client.post(self.url, data, follow=True)
+        self.assertTrue(response.context["sent"])
+        self.assertNotContains(response, HONEYPOT_MARKER)
+
+    def test_bound_form_never_renders_value(self):
+        form = JobApplicationForm(data={"website": HONEYPOT_MARKER})
+        self.assertFalse(form.is_valid())
+        self.assertNotIn(HONEYPOT_MARKER, str(form["website"]))
+
+
+class ApplicationResubmitMixin(ApplicationFormMixin):
+    """FX-32: an application form sent once (Back, then Submit) must not create a
+    second application."""
 
     def test_page_is_not_stored(self):
         response = self.client.get(self.url)
@@ -371,6 +495,20 @@ class JobApplicationResubmitTests(ApplicationResubmitMixin, TestCase):
 
 
 class GeneralApplicationResubmitTests(ApplicationResubmitMixin, TestCase):
+    def setUp(self):
+        self.url = reverse("main:general_application")
+        super().setUp()
+
+
+class JobApplicationHoneypotTests(ApplicationHoneypotMixin, TestCase):
+    def setUp(self):
+        self.job = JobPosting.objects.create(
+            title="Machine Operator", description="Runs the paper machine.")
+        self.url = reverse("main:job_detail", args=[self.job.pk])
+        super().setUp()
+
+
+class GeneralApplicationHoneypotTests(ApplicationHoneypotMixin, TestCase):
     def setUp(self):
         self.url = reverse("main:general_application")
         super().setUp()

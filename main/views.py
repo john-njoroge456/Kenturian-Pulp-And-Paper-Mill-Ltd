@@ -54,6 +54,11 @@ def _application_for_token(token):
     return JobApplication.objects.filter(submission_token=token).first()
 
 
+def _honeypot_filled(request, field):
+    # Bots fill hidden fields; spaces only count as empty, as CharField strips them
+    return bool(request.POST.get(field, "").strip())
+
+
 def _already_placed(request, order):
     # Only the browser that placed the order may see it (FX-01)
     if order.reference not in request.session.get("placed_orders", []):
@@ -383,6 +388,10 @@ def job_detail_view(request, pk):
         # CV for an already sent form is never stored
         if _application_for_token(request.POST.get('submission_token')):
             return redirect(sent_url)
+        # A filled honeypot looks like success to the bot; nothing is kept (FX-16)
+        if _honeypot_filled(request, 'website'):
+            logger.info("Honeypot filled on job application; submission dropped")
+            return redirect(sent_url)
 
         form = JobApplicationForm(request.POST, request.FILES)
         if form.is_valid():
@@ -404,6 +413,9 @@ def general_application_view(request):
         sent_url = reverse('main:general_application') + '?sent=1'
         # Same early check as job_detail_view
         if _application_for_token(request.POST.get('submission_token')):
+            return redirect(sent_url)
+        if _honeypot_filled(request, 'website'):
+            logger.info("Honeypot filled on general application; submission dropped")
             return redirect(sent_url)
 
         form = JobApplicationForm(request.POST, request.FILES)
@@ -431,6 +443,10 @@ def contact_view(request):
     if request.method == 'POST':
         # A form already sent once (Back, then Submit) goes to the sent page
         if _contact_for_token(request.POST.get('submission_token')):
+            return redirect(reverse('main:contact') + '?sent=1')
+        # A filled honeypot looks like success to the bot; nothing is kept (FX-16)
+        if _honeypot_filled(request, 'fax_number'):
+            logger.info("Honeypot filled on contact form; submission dropped")
             return redirect(reverse('main:contact') + '?sent=1')
 
         form = ContactForm(request.POST)
