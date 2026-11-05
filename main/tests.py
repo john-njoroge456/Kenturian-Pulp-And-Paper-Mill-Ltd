@@ -9,6 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
+from .forms import ContactForm
 from .models import (
     ContactMessage,
     JobApplication,
@@ -223,6 +224,40 @@ class ContactResubmitTests(TestCase):
             response, self.sent_url, fetch_redirect_response=False)
         self.assertEqual(ContactMessage.objects.count(), 1)
         self.assertEqual(len(mail.outbox), 0)
+
+
+class ContactEmailLengthTests(TestCase):
+    """FX-24: the contact email allows 254 characters, like the order and application forms."""
+
+    def data(self, email):
+        return {
+            "name": "Jane Doe",
+            "email": email,
+            "subject": "Quote request",
+            "message": "Please send us a quote for kraft liner rolls.",
+            "fax_number": "",
+        }
+
+    def test_254_characters_accepted(self):
+        email = "a" * 242 + "@example.com"
+        self.assertEqual(len(email), 254)
+        form = ContactForm(data=self.data(email))
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_255_characters_rejected(self):
+        email = "a" * 243 + "@example.com"
+        self.assertEqual(len(email), 255)
+        form = ContactForm(data=self.data(email))
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors["email"],
+            ["Please enter an email address of 254 characters or fewer."])
+
+    def test_input_maxlength_is_254(self):
+        response = self.client.get(reverse("main:contact"))
+        self.assertRegex(
+            response.content.decode(),
+            r'<input [^>]*name="email"[^>]*maxlength="254"')
 
 
 class ApplicationResubmitMixin:

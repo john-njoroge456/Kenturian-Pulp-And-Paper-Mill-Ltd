@@ -416,9 +416,11 @@ class ContactForm(forms.Form):
             attrs={"placeholder": "Your name", "autocomplete": "name"}),
     )
     email = forms.EmailField(
+        max_length=254,
         error_messages={
             "required": "Please enter your email address.",
             "invalid": "Enter a valid email address, e.g. name@company.co.ke.",
+            "max_length": "Please enter an email address of 254 characters or fewer.",
         },
         widget=forms.EmailInput(
             attrs={"placeholder": "you@example.com", "autocomplete": "email"}),
