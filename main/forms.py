@@ -404,6 +404,13 @@ OrderItemFormSet = inlineformset_factory(
 )
 
 
+class HoneypotInput(forms.TextInput):
+    """Spam-trap input that never writes the submitted value back into the page."""
+
+    def format_value(self, value):
+        return None
+
+
 def _has_too_many_links(text):
     return len(re.findall(r"https?://|www\.", text, flags=re.IGNORECASE)) > MAX_LINKS
 
@@ -441,7 +448,7 @@ class ContactForm(forms.Form):
     # Hidden trap for spam bots: real visitors never see or fill this in
     fax_number = forms.CharField(
         required=False,
-        widget=forms.TextInput(
+        widget=HoneypotInput(
             attrs={"tabindex": "-1", "autocomplete": "off"}),
     )
     # autocomplete=off stops the browser refilling an old token into a fresh form
@@ -564,7 +571,7 @@ class JobApplicationForm(forms.Form):
     # Hidden spam trap: real people never see or fill this
     website = forms.CharField(
         required=False,
-        widget=forms.TextInput(
+        widget=HoneypotInput(
             attrs={"autocomplete": "off", "tabindex": "-1"}),
     )
     # autocomplete=off stops the browser refilling an old token into a fresh form
