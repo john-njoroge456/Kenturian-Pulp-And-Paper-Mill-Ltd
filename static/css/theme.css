@@ -3044,3 +3044,11 @@ body { overflow-x: clip; }
   transform: none;
   will-change: opacity;
 }
+/* FX-17: character counter under the careers message field */
+.char-counter.is-near {
+  color: var(--bs-warning-text-emphasis);
+}
+.char-counter.is-at {
+  color: var(--bs-danger);
+  font-weight: 600;
+}

@@ -339,6 +339,9 @@ class ContactMessage(models.Model):
     client_email_sent = models.BooleanField(
         default=False, help_text="Whether the confirmation copy reached the sender's email")
     created_at = models.DateTimeField(auto_now_add=True)
+    # One per contact form, so a resubmitted form (Back, double submit) is not saved twice
+    submission_token = models.CharField(
+        max_length=32, unique=True, null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ["-created_at"]
@@ -378,6 +381,9 @@ class JobApplication(models.Model):
     client_email_sent = models.BooleanField(
         default=False, help_text="Whether the confirmation copy reached the applicant's email")
     created_at = models.DateTimeField(auto_now_add=True)
+    # One per application form, so a resubmitted form (Back, double submit) is not saved twice
+    submission_token = models.CharField(
+        max_length=32, unique=True, null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ["-created_at"]

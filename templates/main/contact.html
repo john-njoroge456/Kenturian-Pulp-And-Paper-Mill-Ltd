@@ -45,8 +45,9 @@
       </div>
     </div>
     {% else %}
-    <form method="post" novalidate class="application-form">
+    <form method="post" novalidate class="application-form" autocomplete="off">
           {% csrf_token %}
+          {{ form.submission_token }}
                     <div class="hp-field" aria-hidden="true">
             <label for="{{ form.fax_number.id_for_label }}">Leave this field empty</label>
             {{ form.fax_number }}

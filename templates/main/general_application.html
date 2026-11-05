@@ -37,8 +37,9 @@
           {% endif %}
           {% for err in form.website.errors %}<div class="field-error">{{ err }}</div>{% endfor %}
 
-          <form method="post" enctype="multipart/form-data" class="application-form" novalidate>
+          <form method="post" enctype="multipart/form-data" class="application-form" novalidate autocomplete="off">
             {% csrf_token %}
+            {{ form.submission_token }}
 
             <div>
               <label for="{{ form.name.id_for_label }}"><i class="bi bi-person"></i> Full Name</label>
@@ -88,4 +89,10 @@
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }}
+{% include "main/_clear_field_errors.html" %}
+{% include "main/_char_counter.html" %}
 {% endblock %}

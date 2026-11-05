@@ -1,0 +1,26 @@
+<script>
+// FX-17: live "n / max" counter under each limited textarea in the application forms.
+// The limit comes from the textarea's maxlength, which Django sets from the form field.
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('form.application-form textarea[maxlength]').forEach(function (box) {
+    var max = box.maxLength;
+    if (!(max > 0)) return;
+    var counter = document.createElement('div');
+    counter.className = 'form-text text-end char-counter';
+    counter.id = (box.id || box.name) + '-count';
+    box.insertAdjacentElement('afterend', counter);
+    var described = box.getAttribute('aria-describedby');
+    box.setAttribute('aria-describedby', described ? described + ' ' + counter.id : counter.id);
+
+    function update() {
+      // Browsers submit line breaks as \r\n, which the server counts as 2 characters
+      var count = box.value.replace(/\r?\n/g, '\r\n').length;
+      counter.textContent = count.toLocaleString('en') + ' / ' + max.toLocaleString('en');
+      counter.classList.toggle('is-at', count >= max);
+      counter.classList.toggle('is-near', count < max && count >= max * 0.9);
+    }
+    box.addEventListener('input', update);
+    update();
+  });
+});
+</script>
