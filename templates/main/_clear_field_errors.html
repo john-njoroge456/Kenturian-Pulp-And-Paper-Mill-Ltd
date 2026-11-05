@@ -1,0 +1,33 @@
+<script>
+// Clear a field's server error once the user corrects it (same approach as FX-05 on the order form)
+document.addEventListener('DOMContentLoaded', function () {
+  function clearFieldError(el) {
+    if (!el.classList) return;
+    el.classList.remove('is-invalid');
+    var next = el.nextElementSibling;
+    while (next) {
+      // Stop at the next field so we never clear another field's message
+      if (next.matches('input, select, textarea, label') ||
+          next.querySelector('input, select, textarea')) break;
+      var after = next.nextElementSibling;
+      if (next.classList.contains('field-error') ||
+          next.classList.contains('errorlist') ||
+          next.classList.contains('client-error')) next.remove();
+      next = after;
+    }
+    // Hide (not remove) the summary note once no field error is left in the form.
+    // The honeypot error sits above the form, so it is ignored here.
+    var form = el.form;
+    if (form && !form.querySelector('.is-invalid, .field-error')) {
+      var card = form.closest('.application-form-card');
+      var note = card && card.querySelector('.form-error-note');
+      if (note) note.hidden = true;
+    }
+  }
+
+  document.querySelectorAll('form.application-form').forEach(function (form) {
+    form.addEventListener('input', function (e) { clearFieldError(e.target); });
+    form.addEventListener('change', function (e) { clearFieldError(e.target); });
+  });
+});
+</script>

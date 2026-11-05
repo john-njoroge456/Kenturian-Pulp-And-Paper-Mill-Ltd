@@ -120,3 +120,8 @@
   </div>
 </section>
 {% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }}
+{% include "main/_clear_field_errors.html" %}
+{% endblock %}
