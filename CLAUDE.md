@@ -94,7 +94,7 @@ Uploads are checked by extension, size and leading file bytes. LPOs use `validat
 
 `mysite/settings.py` loads a local `.env` through its own `load_dotenv`; real environment variables take priority.
 
-- `load_dotenv` does not strip inline comments, and `.env.example` uses them. Copied as is, `DEBUG=True    # server: False` is not exactly `True`, so DEBUG stays off, and the blank values become the comment text. Remove the comments when creating a `.env`.
+- `load_dotenv` does not strip inline comments: everything after `=` becomes the value, so `DEBUG=True    # note` is not exactly `True` and DEBUG stays off. Keep comments on their own line in `.env` and both example files. Since FX-28, `.env.example` follows this and can be copied as is.
 - DEBUG is off unless the value is exactly `True`, and `SECRET_KEY` is then required.
 - Without `EMAIL_HOST_PASSWORD`, emails print to the console.
 - With no `DATABASE_URL`, the site uses SQLite at `db.sqlite3`.
