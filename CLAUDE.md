@@ -34,6 +34,7 @@ They catch mail in `mail.outbox` and write CVs to a temporary folder, never to `
 - Resubmit protection (FX-25, FX-32): Back-then-Submit and simultaneous submits on the order, contact and both careers forms create one record and one set of emails. The pages are served `no-store`, and the forms have `autocomplete="off"`.
 - Contact email length (FX-24): 254 characters are accepted and 255 rejected, and the input has `maxlength="254"`.
 - Honeypots (FX-16): a filled `fax_number` or `website` redirects to `?sent=1`. It saves nothing, sends no email, stores no CV and never shows the value back.
+- Order honeypot (FX-35): a filled `kp_hp_check` redirects to `/order/?sent=1`, which shows a generic card with no reference or order details. It saves no order or items, sends no email, stores no LPO and leaves `placed_orders` alone. The field is named so autofill won't fill it. The multi-item formset and the no-JS note are unaffected.
 
 Not covered: the order-form business rules (colours, limits, phone rules), the admin report and Excel exports, the upload signature checks, and JS behaviour. The separate Selenium suite covers the browser.
 

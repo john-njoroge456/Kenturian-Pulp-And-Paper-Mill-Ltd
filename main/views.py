@@ -82,6 +82,10 @@ def order_request_view(request):
         existing = _order_for_token(request.POST.get("submission_token"))
         if existing:
             return _already_placed(request, existing)
+        # A filled honeypot looks like success to the bot; nothing is kept (FX-35)
+        if _honeypot_filled(request, "kp_hp_check"):
+            logger.info("Honeypot filled on order form; submission dropped")
+            return redirect(reverse("main:order") + "?sent=1")
 
         form = OrderRequestForm(request.POST, request.FILES)
         formset = OrderItemFormSet(
@@ -190,6 +194,8 @@ def order_request_view(request):
         "formset": formset,
         "max_items": MAX_ITEMS,
         "hero_image": hero_image,
+        # Generic confirmation only: no reference or order details (FX-35)
+        "sent": request.GET.get("sent") == "1",
     })
 
 

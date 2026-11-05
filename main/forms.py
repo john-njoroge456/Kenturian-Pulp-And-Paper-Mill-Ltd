@@ -93,8 +93,22 @@ def clean_text(value, label):
     return text
 
 
+class HoneypotInput(forms.TextInput):
+    """Spam-trap input that never writes the submitted value back into the page."""
+
+    def format_value(self, value):
+        return None
+
+
 class OrderRequestForm(forms.ModelForm):
     """Shared order details: who is ordering, delivery, LPO and notes."""
+    # Hidden trap for spam bots: real visitors never see or fill this in (FX-35).
+    # The name matches no autofill field, so browsers won't fill it for a real client
+    kp_hp_check = forms.CharField(
+        required=False,
+        widget=HoneypotInput(
+            attrs={"tabindex": "-1", "autocomplete": "off"}),
+    )
     # autocomplete=off stops the browser refilling an old token into a fresh form
     submission_token = forms.CharField(
         required=False,
@@ -152,6 +166,11 @@ class OrderRequestForm(forms.ModelForm):
         # A missing or malformed token just skips the duplicate check
         token = self.cleaned_data.get("submission_token") or ""
         return token if TOKEN_RE.fullmatch(token) else None
+
+    def clean_kp_hp_check(self):
+        if self.cleaned_data.get("kp_hp_check"):
+            raise forms.ValidationError("This order could not be sent.")
+        return ""
 
     def clean_company_name(self):
         return clean_text(self.cleaned_data.get("company_name"), "Company name")
@@ -402,13 +421,6 @@ OrderItemFormSet = inlineformset_factory(
     absolute_max=MAX_ITEMS + 5,
     can_delete=False,
 )
-
-
-class HoneypotInput(forms.TextInput):
-    """Spam-trap input that never writes the submitted value back into the page."""
-
-    def format_value(self, value):
-        return None
 
 
 def _has_too_many_links(text):
