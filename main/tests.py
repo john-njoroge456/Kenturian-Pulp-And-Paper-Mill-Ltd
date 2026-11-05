@@ -9,18 +9,20 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .forms import ContactForm, JobApplicationForm
+from .forms import ContactForm, JobApplicationForm, OrderRequestForm
 from .models import (
     ContactMessage,
     JobApplication,
     JobPosting,
+    NewsArticle,
+    OrderItem,
     OrderItemOption,
     OrderRequest,
 )
 
 
-class OrderResubmitTests(TestCase):
-    """FX-25: a form sent once (Back, then Submit) must not create a second order."""
+class OrderFormMixin:
+    """Shared setup for the order form tests."""
 
     def setUp(self):
         OrderItemOption.objects.create(name="Kraft Liner")
@@ -30,8 +32,9 @@ class OrderResubmitTests(TestCase):
         response = (client or self.client).get(self.order_url)
         return response.context["form"]["submission_token"].value()
 
-    def order_data(self, token, quantity=500):
-        return {
+    def order_data(self, token, quantity=500, gsms=("80",)):
+        # One Kraft Liner item per GSM; different GSMs keep the items distinct
+        data = {
             "submission_token": token,
             "company_name": "Acme Traders Ltd",
             "contact_person": "Jane Doe",
@@ -39,20 +42,28 @@ class OrderResubmitTests(TestCase):
             "email": "jane@example.com",
             "delivery_location": "Thika",
             "notes": "",
-            "items-TOTAL_FORMS": "1",
+            "items-TOTAL_FORMS": str(len(gsms)),
             "items-INITIAL_FORMS": "0",
             "items-MIN_NUM_FORMS": "1",
             "items-MAX_NUM_FORMS": "10",
-            "items-0-item_description": "Kraft Liner",
-            "items-0-color": "Brown",
-            "items-0-color_other": "",
-            "items-0-length": "1500",
-            "items-0-gsm": "80",
-            "items-0-quantity": str(quantity),
         }
+        for n, gsm in enumerate(gsms):
+            data.update({
+                f"items-{n}-item_description": "Kraft Liner",
+                f"items-{n}-color": "Brown",
+                f"items-{n}-color_other": "",
+                f"items-{n}-length": "1500",
+                f"items-{n}-gsm": gsm,
+                f"items-{n}-quantity": str(quantity),
+            })
+        return data
 
     def success_url(self, order):
         return reverse("main:order_success", args=[order.reference])
+
+
+class OrderResubmitTests(OrderFormMixin, TestCase):
+    """FX-25: a form sent once (Back, then Submit) must not create a second order."""
 
     def test_order_page_is_not_stored(self):
         response = self.client.get(self.order_url)
@@ -311,6 +322,100 @@ class ContactHoneypotTests(TestCase):
         self.assertEqual(len(mail.outbox), 2)
 
 
+class OrderHoneypotTests(OrderFormMixin, TestCase):
+    """FX-35: a filled order honeypot looks like success, keeps nothing (no order,
+    no emails, no LPO) and never shows the value or any order back."""
+
+    def setUp(self):
+        super().setUp()
+        self.sent_url = self.order_url + "?sent=1"
+        # private_storage fixes its location at import, so point the LPO field
+        # at a temporary folder instead of the real private_media/
+        self.lpo_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.lpo_dir, ignore_errors=True)
+        patcher = mock.patch.object(
+            OrderRequest._meta.get_field("lpo_file"), "storage",
+            FileSystemStorage(location=self.lpo_dir))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def stored_lpos(self):
+        return [name for _, _, files in os.walk(self.lpo_dir) for name in files]
+
+    def two_item_data(self, kp_hp_check=HONEYPOT_MARKER, **overrides):
+        data = self.order_data(self.get_token(), gsms=("80", "100"))
+        # A new file each time: an uploaded file is consumed once posted
+        data["lpo_file"] = SimpleUploadedFile(
+            "lpo.pdf", b"%PDF-1.4 test lpo", content_type="application/pdf")
+        data["kp_hp_check"] = kp_hp_check
+        data.update(overrides)
+        return data
+
+    def assert_nothing_kept(self):
+        self.assertFalse(OrderRequest.objects.exists())
+        self.assertFalse(OrderItem.objects.exists())
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(self.stored_lpos(), [])
+        self.assertNotIn("placed_orders", self.client.session)
+
+    def test_filled_honeypot_redirects_to_sent_and_keeps_nothing(self):
+        response = self.client.post(self.order_url, self.two_item_data())
+        self.assertRedirects(response, self.sent_url)
+        self.assert_nothing_kept()
+
+    def test_filled_honeypot_with_invalid_fields_still_redirects(self):
+        data = self.two_item_data(company_name="", **{"items-0-gsm": "9999"})
+        response = self.client.post(self.order_url, data)
+        self.assertRedirects(response, self.sent_url)
+        self.assert_nothing_kept()
+
+    def test_sent_page_does_not_echo_value(self):
+        response = self.client.post(
+            self.order_url, self.two_item_data(), follow=True)
+        self.assertTrue(response.context["sent"])
+        self.assertContains(response, "Order Request Received")
+        # Generic card only: no form, no reference, nothing that was posted
+        self.assertNotContains(response, 'id="orderForm"')
+        for text in (HONEYPOT_MARKER, "KPM-", "Acme Traders", "jane@example.com"):
+            self.assertNotContains(response, text)
+
+    def test_bound_form_never_renders_value(self):
+        form = OrderRequestForm(data={"kp_hp_check": HONEYPOT_MARKER})
+        self.assertFalse(form.is_valid())
+        self.assertIn("kp_hp_check", form.errors)
+        self.assertNotIn(HONEYPOT_MARKER, str(form["kp_hp_check"]))
+
+    def test_spaces_only_honeypot_is_treated_as_empty(self):
+        response = self.client.post(
+            self.order_url, self.two_item_data(kp_hp_check="   "))
+        order = OrderRequest.objects.get()
+        self.assertRedirects(response, self.success_url(order))
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(len(self.stored_lpos()), 1)
+
+    def test_multi_item_order_unaffected(self):
+        response = self.client.post(
+            self.order_url, self.two_item_data(kp_hp_check=""))
+        order = OrderRequest.objects.get()
+        self.assertRedirects(response, self.success_url(order))
+        self.assertEqual(
+            [(i.position, i.gsm) for i in order.items.all()], [(1, 80), (2, 100)])
+
+    def test_trap_rendered_outside_item_rows(self):
+        content = self.client.get(self.order_url).content.decode()
+        self.assertEqual(content.count('name="kp_hp_check"'), 1)
+        self.assertRegex(
+            content,
+            r'<div class="hp-field" aria-hidden="true">\s*<label[^>]*>[^<]*</label>\s*'
+            r'<input [^>]*name="kp_hp_check"[^>]*tabindex="-1"')
+        row_template = content.split('<template id="itemRowTemplate">', 1)[1]
+        row_template = row_template.split("</template>", 1)[0]
+        self.assertNotIn("kp_hp_check", row_template)
+        # The no-JS note is still there
+        self.assertContains(
+            self.client.get(self.order_url), "JavaScript is turned off")
+
+
 class ApplicationFormMixin:
     """Shared setup for the careers form tests. Subclasses set up self.url and self.job."""
 
@@ -512,3 +617,40 @@ class GeneralApplicationHoneypotTests(ApplicationHoneypotMixin, TestCase):
     def setUp(self):
         self.url = reverse("main:general_application")
         super().setUp()
+
+
+class NavActiveTests(TestCase):
+    """FX-21: News and Careers stay active on their sub-pages."""
+
+    def setUp(self):
+        self.article = NewsArticle.objects.create(
+            title="Mill expansion", body="New paper machine installed.")
+        self.job = JobPosting.objects.create(
+            title="Machine Operator", description="Runs the paper machine.")
+        self.news_link = f'class="nav-link active" href="{reverse("main:news_list")}"'
+        self.careers_link = f'class="nav-link active" href="{reverse("main:careers")}"'
+
+    def assertActive(self, url, news, careers):
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertEqual(self.news_link in html, news, f"News active on {url}")
+        self.assertEqual(
+            self.careers_link in html, careers, f"Careers active on {url}")
+
+    def test_news_pages(self):
+        self.assertActive(reverse("main:news_list"), news=True, careers=False)
+        self.assertActive(
+            reverse("main:news_detail", args=[self.article.slug]),
+            news=True, careers=False)
+
+    def test_careers_pages(self):
+        for url in (
+            reverse("main:careers"),
+            reverse("main:job_detail", args=[self.job.pk]),
+            reverse("main:general_application"),
+        ):
+            self.assertActive(url, news=False, careers=True)
+
+    def test_other_pages_unaffected(self):
+        self.assertActive(reverse("main:about"), news=False, careers=False)

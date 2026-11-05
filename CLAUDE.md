@@ -34,6 +34,7 @@ They catch mail in `mail.outbox` and write CVs to a temporary folder, never to `
 - Resubmit protection (FX-25, FX-32): Back-then-Submit and simultaneous submits on the order, contact and both careers forms create one record and one set of emails. The pages are served `no-store`, and the forms have `autocomplete="off"`.
 - Contact email length (FX-24): 254 characters are accepted and 255 rejected, and the input has `maxlength="254"`.
 - Honeypots (FX-16): a filled `fax_number` or `website` redirects to `?sent=1`. It saves nothing, sends no email, stores no CV and never shows the value back.
+- Order honeypot (FX-35): a filled `kp_hp_check` redirects to `/order/?sent=1`, which shows a generic card with no reference or order details. It saves no order or items, sends no email, stores no LPO and leaves `placed_orders` alone. The field is named so autofill won't fill it. The multi-item formset and the no-JS note are unaffected.
 
 Not covered: the order-form business rules (colours, limits, phone rules), the admin report and Excel exports, the upload signature checks, and JS behaviour. The separate Selenium suite covers the browser.
 
@@ -94,7 +95,7 @@ Uploads are checked by extension, size and leading file bytes. LPOs use `validat
 
 `mysite/settings.py` loads a local `.env` through its own `load_dotenv`; real environment variables take priority.
 
-- `load_dotenv` does not strip inline comments, and `.env.example` uses them. Copied as is, `DEBUG=True    # server: False` is not exactly `True`, so DEBUG stays off, and the blank values become the comment text. Remove the comments when creating a `.env`.
+- `load_dotenv` does not strip inline comments: everything after `=` becomes the value, so `DEBUG=True    # note` is not exactly `True` and DEBUG stays off. Keep comments on their own line in `.env` and both example files. Since FX-28, `.env.example` follows this and can be copied as is.
 - DEBUG is off unless the value is exactly `True`, and `SECRET_KEY` is then required.
 - Without `EMAIL_HOST_PASSWORD`, emails print to the console.
 - With no `DATABASE_URL`, the site uses SQLite at `db.sqlite3`.
