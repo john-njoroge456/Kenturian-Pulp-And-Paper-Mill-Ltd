@@ -280,6 +280,7 @@ class EmployeeStory(models.Model):
 
     class Meta:
         ordering = ['order', '-created_at']
+        verbose_name_plural = "employee stories"
 
     def __str__(self):
         return f"{self.author_name} — {self.author_role}"
