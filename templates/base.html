@@ -64,8 +64,10 @@
   <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'main:index' %}">Home</a></li>
   <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" href="{% url 'main:about' %}">About Us</a></li>
   
-  <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'careers' %}active{% endif %}" href="{% url 'main:careers' %}">Careers</a></li>
-  <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'news_list' %}active{% endif %}" href="{% url 'main:news_list' %}">News</a></li>
+  {% with url_name=request.resolver_match.url_name %}
+  <li class="nav-item"><a class="nav-link {% if url_name == 'careers' or url_name == 'job_detail' or url_name == 'general_application' %}active{% endif %}" href="{% url 'main:careers' %}">Careers</a></li>
+  <li class="nav-item"><a class="nav-link {% if url_name == 'news_list' or url_name == 'news_detail' %}active{% endif %}" href="{% url 'main:news_list' %}">News</a></li>
+  {% endwith %}
 </ul>
       <div class="d-flex align-items-center gap-2 nav-actions">
         {% comment %}

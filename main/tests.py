@@ -14,6 +14,7 @@ from .models import (
     ContactMessage,
     JobApplication,
     JobPosting,
+    NewsArticle,
     OrderItemOption,
     OrderRequest,
 )
@@ -512,3 +513,40 @@ class GeneralApplicationHoneypotTests(ApplicationHoneypotMixin, TestCase):
     def setUp(self):
         self.url = reverse("main:general_application")
         super().setUp()
+
+
+class NavActiveTests(TestCase):
+    """FX-21: News and Careers stay active on their sub-pages."""
+
+    def setUp(self):
+        self.article = NewsArticle.objects.create(
+            title="Mill expansion", body="New paper machine installed.")
+        self.job = JobPosting.objects.create(
+            title="Machine Operator", description="Runs the paper machine.")
+        self.news_link = f'class="nav-link active" href="{reverse("main:news_list")}"'
+        self.careers_link = f'class="nav-link active" href="{reverse("main:careers")}"'
+
+    def assertActive(self, url, news, careers):
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertEqual(self.news_link in html, news, f"News active on {url}")
+        self.assertEqual(
+            self.careers_link in html, careers, f"Careers active on {url}")
+
+    def test_news_pages(self):
+        self.assertActive(reverse("main:news_list"), news=True, careers=False)
+        self.assertActive(
+            reverse("main:news_detail", args=[self.article.slug]),
+            news=True, careers=False)
+
+    def test_careers_pages(self):
+        for url in (
+            reverse("main:careers"),
+            reverse("main:job_detail", args=[self.job.pk]),
+            reverse("main:general_application"),
+        ):
+            self.assertActive(url, news=False, careers=True)
+
+    def test_other_pages_unaffected(self):
+        self.assertActive(reverse("main:about"), news=False, careers=False)
