@@ -56,25 +56,25 @@
           <div>
             <label for="{{ form.name.id_for_label }}"><i class="bi bi-person"></i> Full Name</label>
             {{ form.name }}
-            {{ form.name.errors }}
+            {% for err in form.name.errors %}<div class="field-error">{{ err }}</div>{% endfor %}
           </div>
 
           <div>
             <label for="{{ form.email.id_for_label }}"><i class="bi bi-envelope"></i> Email</label>
             {{ form.email }}
-            {{ form.email.errors }}
+            {% for err in form.email.errors %}<div class="field-error">{{ err }}</div>{% endfor %}
           </div>
 
           <div>
             <label for="{{ form.subject.id_for_label }}"><i class="bi bi-tag"></i> Subject</label>
             {{ form.subject }}
-            {{ form.subject.errors }}
+            {% for err in form.subject.errors %}<div class="field-error">{{ err }}</div>{% endfor %}
           </div>
 
           <div>
             <label for="{{ form.message.id_for_label }}"><i class="bi bi-chat-left-text"></i> Message</label>
             {{ form.message }}
-            {{ form.message.errors }}
+            {% for err in form.message.errors %}<div class="field-error">{{ err }}</div>{% endfor %}
           </div>
 
           {% if form.errors %}
@@ -141,6 +141,7 @@
 
 {% block extra_scripts %}
 {{ block.super }}
+{% include "main/_clear_field_errors.html" %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var box = document.getElementById('id_message');
