@@ -4,6 +4,8 @@
 {% block title %}{{ COMPANY_NAME }} — Quality Paper Manufacturers in Kenya{% endblock %}
 
 {% block hero %}
+{# The page's single h1. Slide titles below are h2 so the carousel never adds more. #}
+<h1 class="visually-hidden">Kenturian Pulp &amp; Paper Mills — Quality Paper Manufacturers in Kenya</h1>
 <div id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="6000">
 
   <div class="carousel-indicators hero-indicators">
@@ -24,7 +26,7 @@
       <div class="hero-caption">
         <div class="hero-caption-inner">
           <span class="hero-accent-line"></span>
-          <h1 class="hero-title mb-2">{{ g.title|default:"Sustainable paper solutions for industry and community" }}</h1>
+          <h2 class="hero-title mb-2">{{ g.title|default:"Sustainable paper solutions for industry and community" }}</h2>
           <p class="lead mb-3">{{ g.caption|default:"We produce high-quality paper and packaging materials from recycled fibers — supporting circular economy and local jobs in Nairobi." }}</p>
         </div>
       </div>
