@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load text_extras %}
 {% block title %}Contact — {{ COMPANY_NAME }}{% endblock %}
+{% block meta_description %}We'd love to hear from you. Reach out with any questions or requests. Our office: {{ COMPANY_LOCATION }}{% endblock %}
 
 {% block hero %}
 <div class="page-hero-navy hero-contact {% if hero_image %}hero-bg-animated{% endif %}"
