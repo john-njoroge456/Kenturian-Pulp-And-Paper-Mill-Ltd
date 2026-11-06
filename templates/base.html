@@ -13,12 +13,15 @@
   <title>{% block title %}Kenturian Pulp & Paper Mills Limited{% endblock %}</title>
     <meta name="description" content="{% block meta_description %}Kenturian Pulp & Paper Mills Limited — Kenyan manufacturer of MG Cover, Test Liner, Fluting, Duplex and Tissue paper made from recycled waste paper.{% endblock %}">
 
+  <!-- Canonical URL: path only, no query string, except news list page 2+ -->
+  <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}{% if page_obj.number > 1 %}?page={{ page_obj.number }}{% endif %}">
+
   <!-- Link previews (WhatsApp, Facebook, LinkedIn) -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Kenturian Pulp & Paper Mills Limited">
   <meta property="og:title" content="{% block og_title %}Kenturian Pulp & Paper Mills Limited{% endblock %}">
   <meta property="og:description" content="{% block og_description %}Quality paper manufacturers in Kenya — turning recovered paper into products for packaging, converting and industry.{% endblock %}">
-  <meta property="og:url" content="{{ request.build_absolute_uri }}">
+  <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}{% if page_obj.number > 1 %}?page={{ page_obj.number }}{% endif %}">
   <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/og-image.jpg' %}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
