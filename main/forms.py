@@ -72,7 +72,6 @@ CV_SIGNATURES = {
     ".doc": (b"\xd0\xcf\x11\xe0",),
 }
 NAME_RE = re.compile(r"^[^\W\d_][^\W\d_ .'\-]*(?:[ .'\-]+[^\W\d_]+)*\.?$")
-LINK_RE = re.compile(r"(https?://|www\.)", re.IGNORECASE)
 TOKEN_RE = re.compile(r"[0-9a-f]{32}")
 
 
@@ -429,8 +428,36 @@ OrderItemFormSet = inlineformset_factory(
 )
 
 
-def _has_too_many_links(text):
-    return len(re.findall(r"https?://|www\.", text, flags=re.IGNORECASE)) > MAX_LINKS
+OWN_DOMAIN = "kenturian.co.ke"
+EMAIL_IN_TEXT_RE = re.compile(r"\S+@\S+")
+URL_RE = re.compile(r"(?:https?://|www\.)[^\s<>\"']+", re.IGNORECASE)
+# Bare domains such as indexdomain.live (FX-37). The last part must be 2-24
+# lowercase letters, so "e.g.", "i.e.", "2.5" and a missed space ("end.Next")
+# are not links. The lookbehind stops a match starting mid-word.
+BARE_DOMAIN_RE = re.compile(
+    r"(?<![\w.@-])(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+([a-z]{2,24})(?![\w-])")
+# File names look like domains ("LPO.pdf"), so these endings never count
+FILE_EXTENSIONS = {"pdf", "doc", "docx", "xls", "xlsx", "jpg", "jpeg", "png", "txt", "csv"}
+
+
+def _is_own_domain(host):
+    return host == OWN_DOMAIN or host.endswith("." + OWN_DOMAIN)
+
+
+def _url_host(url):
+    url = re.sub(r"^https?://", "", url, flags=re.IGNORECASE)
+    return re.split(r"[/?#:]", url, maxsplit=1)[0].lower()
+
+
+def count_links(text):
+    """Links in a message: http(s):// and www. URLs plus bare domains,
+    leaving out email addresses, file names and our own domain."""
+    text = EMAIL_IN_TEXT_RE.sub(" ", text or "")
+    hosts = [_url_host(url) for url in URL_RE.findall(text)]
+    text = URL_RE.sub(" ", text)
+    hosts += [m.group(0).lower() for m in BARE_DOMAIN_RE.finditer(text)
+              if m.group(1) not in FILE_EXTENSIONS]
+    return sum(1 for host in hosts if not _is_own_domain(host))
 
 
 class ContactForm(forms.Form):
@@ -518,7 +545,7 @@ class ContactForm(forms.Form):
                 f"Your message is {len(text):,} characters long. "
                 f"Please keep it to {CONTACT_MESSAGE_MAX:,} characters or fewer."
             )
-        if _has_too_many_links(text):
+        if count_links(text) > MAX_LINKS:
             raise forms.ValidationError(
                 f"Please remove some links. A message can contain at most {MAX_LINKS} links."
             )
@@ -620,7 +647,7 @@ class JobApplicationForm(forms.Form):
 
     def clean_message(self):
         message = self.cleaned_data["message"].strip()
-        if len(LINK_RE.findall(message)) > MAX_LINKS:
+        if count_links(message) > MAX_LINKS:
             raise ValidationError(
                 f"Please include no more than {MAX_LINKS} links in your message.")
         return message

@@ -9,7 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .forms import ContactForm, JobApplicationForm, OrderRequestForm
+from .forms import ContactForm, JobApplicationForm, OrderRequestForm, count_links
 from .models import (
     ContactMessage,
     JobApplication,
@@ -754,3 +754,90 @@ class GeneralApplicationConfirmationEmailTests(ApplicationConfirmationEmailMixin
     def setUp(self):
         self.url = reverse("main:general_application")
         super().setUp()
+
+
+# The two real spam messages received through the contact form (FX-37)
+SPAM_MESSAGES = (
+    "Submit kenturian.co.ke now: indexhelper.live",
+    "Include kenturian.co.ke today: indexdomain.live",
+)
+
+
+class LinkCountTests(TestCase):
+    """FX-37: bare domains count as links; ordinary text does not."""
+
+    def test_real_spam_counts_one_link_each(self):
+        for text in SPAM_MESSAGES:
+            self.assertEqual(count_links(text), 1, text)
+
+    def test_counted(self):
+        cases = {
+            "http://a.com www.b.com c.live": 3,
+            "HTTPS://Spam.Example.COM/path": 1,
+            "see spam.co.ke, then indexdomain.live.": 2,
+            "indexhelper.live/submit?x=1": 1,
+        }
+        for text, expected in cases.items():
+            self.assertEqual(count_links(text), expected, text)
+
+    def test_not_counted(self):
+        for text in (
+            "Visit kenturian.co.ke for details",
+            "https://kenturian.co.ke/products and www.kenturian.co.ke",
+            "Email me at jane@example.com or sales@kenturian.co.ke",
+            "We need 2.5 tonnes, i.e. about 2,500 kg",
+            "Kraft liner, e.g. 80 GSM rolls",
+            "I attached LPO.pdf and quote.docx",
+            "Thanks for the quote.Next week works.",
+            "Size 1.5kg, Ph.D. holder, U.S.A. based",
+        ):
+            self.assertEqual(count_links(text), 0, text)
+
+
+class LinkLimitFormTests(ApplicationFormMixin, TestCase):
+    """FX-37: over the limit keeps the visible error so a real visitor can fix
+    and resend; one link or our own domain still goes through."""
+
+    def setUp(self):
+        self.url = reverse("main:general_application")
+        super().setUp()
+        self.contact_url = reverse("main:contact")
+
+    def post_contact(self, message):
+        return self.client.post(self.contact_url, {
+            "name": "Jane Doe",
+            "email": "jane@example.com",
+            "subject": "Quote request",
+            "message": message,
+            "fax_number": "",
+        })
+
+    def test_contact_three_bare_domains_show_error(self):
+        message = "Please list us on a.live b.live c.live"
+        response = self.post_contact(message)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Please remove some links")
+        self.assertContains(response, message)
+        self.assertFalse(ContactMessage.objects.exists())
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_contact_one_link_goes_through(self):
+        response = self.post_contact("Our specs are at https://example.com/specs")
+        self.assertRedirects(response, self.contact_url + "?sent=1")
+        self.assertEqual(ContactMessage.objects.count(), 1)
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_contact_mentioning_our_domain_goes_through(self):
+        response = self.post_contact(
+            "I found your prices on kenturian.co.ke and would like a quote.")
+        self.assertRedirects(response, self.contact_url + "?sent=1")
+        self.assertEqual(ContactMessage.objects.count(), 1)
+
+    def test_application_three_bare_domains_show_error(self):
+        data = self.app_data(
+            self.get_token(), message="My portfolio: a.live b.live c.live and more.")
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Please include no more than")
+        self.assertFalse(JobApplication.objects.exists())
+        self.assertEqual(self.stored_cvs(), [])
