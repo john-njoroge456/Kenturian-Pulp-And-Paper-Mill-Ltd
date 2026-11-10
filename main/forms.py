@@ -189,6 +189,9 @@ class OrderRequestForm(forms.ModelForm):
     def clean_phone(self):
         return normalize_phone(self.cleaned_data.get("phone"))
 
+    def clean_email(self):
+        return reject_lookalike_email(self.cleaned_data.get("email"))
+
     def clean_notes(self):
         text = (self.cleaned_data.get("notes")
                 or "").replace("\r\n", "\n").strip()
@@ -444,6 +447,16 @@ def _is_own_domain(host):
     return host == OWN_DOMAIN or host.endswith("." + OWN_DOMAIN)
 
 
+def reject_lookalike_email(email):
+    """Refuse sender domains that imitate ours, e.g. search-kenturian.co.ke (FX-37).
+    The views drop these like a filled honeypot, so the message is never shown."""
+    domain = (email or "").rsplit("@", 1)[-1].lower()
+    if "kenturian" in domain and domain != OWN_DOMAIN:
+        raise forms.ValidationError(
+            "This message could not be sent.", code="lookalike_sender")
+    return email
+
+
 def _url_host(url):
     url = re.sub(r"^https?://", "", url, flags=re.IGNORECASE)
     return re.split(r"[/?#:]", url, maxsplit=1)[0].lower()
@@ -523,7 +536,7 @@ class ContactForm(forms.Form):
         return name
 
     def clean_email(self):
-        return self.cleaned_data["email"].lower()
+        return reject_lookalike_email(self.cleaned_data["email"].lower())
 
     def clean_subject(self):
         subject = self.cleaned_data["subject"]
@@ -641,6 +654,9 @@ class JobApplicationForm(forms.Form):
             raise ValidationError(
                 "Your name can only contain letters, spaces, hyphens, apostrophes and full stops.")
         return name
+
+    def clean_email(self):
+        return reject_lookalike_email(self.cleaned_data["email"])
 
     def clean_phone(self):
         return normalize_phone(self.cleaned_data.get("phone"))

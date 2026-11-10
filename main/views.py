@@ -86,6 +86,16 @@ def _honeypot_filled(request, field):
     return bool(request.POST.get(field, "").strip())
 
 
+def _lookalike_sender(form, form_name):
+    """True if the sender's domain imitates ours (FX-37). The caller then answers
+    like a filled honeypot. The log line names the form only, no submitted values.
+    Other errors, such as too many links, still show on the form."""
+    if form.has_error("email", code="lookalike_sender"):
+        logger.info("Lookalike sender dropped on %s form", form_name)
+        return True
+    return False
+
+
 def _already_placed(request, order):
     # Only the browser that placed the order may see it (FX-01)
     if order.reference not in request.session.get("placed_orders", []):
@@ -119,6 +129,9 @@ def order_request_view(request):
             request.POST, instance=OrderRequest(), prefix="items")
         form_ok = form.is_valid()
         items_ok = formset.is_valid()   # run both so every error shows at once
+        # Same generic card as the honeypot: nothing saved, no LPO kept (FX-37)
+        if _lookalike_sender(form, "order"):
+            return redirect(reverse("main:order") + "?sent=1")
 
         if form_ok and items_ok:
             token = form.cleaned_data["submission_token"]
@@ -437,6 +450,8 @@ def job_detail_view(request, pk):
         if form.is_valid():
             _process_application(form, job=job)
             return redirect(sent_url)
+        if _lookalike_sender(form, "job application"):
+            return redirect(sent_url)
     else:
         form = JobApplicationForm()
     sent = request.GET.get('sent') == '1'
@@ -461,6 +476,8 @@ def general_application_view(request):
         form = JobApplicationForm(request.POST, request.FILES)
         if form.is_valid():
             _process_application(form)
+            return redirect(sent_url)
+        if _lookalike_sender(form, "general application"):
             return redirect(sent_url)
     else:
         form = JobApplicationForm()
@@ -545,6 +562,8 @@ def contact_view(request):
             except Exception:
                 pass
 
+            return redirect(reverse('main:contact') + '?sent=1')
+        if _lookalike_sender(form, "contact"):
             return redirect(reverse('main:contact') + '?sent=1')
     else:
         initial_subject = request.GET.get('subject', '')

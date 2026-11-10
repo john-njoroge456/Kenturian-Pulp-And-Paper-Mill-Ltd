@@ -841,3 +841,127 @@ class LinkLimitFormTests(ApplicationFormMixin, TestCase):
         self.assertContains(response, "Please include no more than")
         self.assertFalse(JobApplication.objects.exists())
         self.assertEqual(self.stored_cvs(), [])
+
+
+LOOKALIKE_SENDERS = ("domains@search-kenturian.co.ke", "X@KENTURIAN-seo.com")
+
+
+class LookalikeLogMixin:
+    """FX-37: a lookalike sender is dropped like a filled honeypot, with one
+    log line that names the form but none of the submitted values."""
+
+    def assert_one_clean_log_line(self, logs, values):
+        self.assertEqual(len(logs.output), 1)
+        self.assertIn("Lookalike sender dropped", logs.output[0])
+        for value in values:
+            self.assertNotIn(value.lower(), logs.output[0].lower())
+
+
+class ContactLookalikeTests(LookalikeLogMixin, TestCase):
+    def setUp(self):
+        self.contact_url = reverse("main:contact")
+        self.sent_url = self.contact_url + "?sent=1"
+
+    def post(self, **data):
+        return self.client.post(self.contact_url, {"fax_number": "", **data})
+
+    def test_real_spam_dropped_silently(self):
+        for name, message in zip(("Hyman", "Glenn"), SPAM_MESSAGES):
+            submitted = {
+                "name": name,
+                "email": "domains@search-kenturian.co.ke",
+                "subject": "Results for kenturian.co.ke",
+                "message": message,
+            }
+            with self.assertLogs("main.views", level="INFO") as logs:
+                response = self.post(**submitted)
+            self.assertRedirects(response, self.sent_url)
+            self.assert_one_clean_log_line(
+                logs, [name, "search-kenturian", "Results for", "indexhelper", "indexdomain"])
+        self.assertFalse(ContactMessage.objects.exists())
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_uppercase_lookalike_with_other_errors_still_dropped(self):
+        response = self.post(name="", email="X@KENTURIAN-seo.com",
+                             subject="Hi", message="a.live b.live c.live d.live")
+        self.assertRedirects(response, self.sent_url)
+        self.assertFalse(ContactMessage.objects.exists())
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_our_own_domain_goes_through(self):
+        response = self.post(name="Jane Doe", email="sales@kenturian.co.ke",
+                             subject="Internal test", message="Testing the form from the office.")
+        self.assertRedirects(response, self.sent_url)
+        self.assertEqual(ContactMessage.objects.count(), 1)
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_too_many_links_from_normal_sender_still_shows_error(self):
+        response = self.post(name="Jane Doe", email="jane@example.com",
+                             subject="Listing", message="See a.live b.live c.live")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Please remove some links")
+
+
+class OrderLookalikeTests(OrderFormMixin, LookalikeLogMixin, TestCase):
+    def setUp(self):
+        super().setUp()
+        self.sent_url = self.order_url + "?sent=1"
+        # Keep any LPO out of the real private_media/
+        self.lpo_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.lpo_dir, ignore_errors=True)
+        patcher = mock.patch.object(
+            OrderRequest._meta.get_field("lpo_file"), "storage",
+            FileSystemStorage(location=self.lpo_dir))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_lookalike_dropped_silently(self):
+        for email in LOOKALIKE_SENDERS:
+            data = self.order_data(self.get_token())
+            data["email"] = email
+            data["lpo_file"] = SimpleUploadedFile(
+                "lpo.pdf", b"%PDF-1.4 test lpo", content_type="application/pdf")
+            with self.assertLogs("main.views", level="INFO") as logs:
+                response = self.client.post(self.order_url, data)
+            self.assertRedirects(response, self.sent_url)
+            self.assert_one_clean_log_line(logs, [email, "Acme", "Jane"])
+        self.assertFalse(OrderRequest.objects.exists())
+        self.assertFalse(OrderItem.objects.exists())
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertFalse([f for _, _, files in os.walk(self.lpo_dir) for f in files])
+        self.assertNotIn("placed_orders", self.client.session)
+
+    def test_our_own_domain_goes_through(self):
+        data = self.order_data(self.get_token())
+        data["email"] = "sales@kenturian.co.ke"
+        response = self.client.post(self.order_url, data)
+        order = OrderRequest.objects.get()
+        self.assertRedirects(response, self.success_url(order))
+
+
+class ApplicationLookalikeMixin(ApplicationFormMixin, LookalikeLogMixin):
+    def test_lookalike_dropped_silently(self):
+        for email in LOOKALIKE_SENDERS:
+            data = self.app_data(self.get_token())
+            data["email"] = email
+            with self.assertLogs("main.views", level="INFO") as logs:
+                response = self.client.post(self.url, data)
+            self.assertRedirects(response, self.sent_url)
+            self.assert_one_clean_log_line(logs, [email, "Jane"])
+        self.assertFalse(JobApplication.objects.exists())
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(self.stored_cvs(), [])
+
+
+class JobApplicationLookalikeTests(ApplicationLookalikeMixin, TestCase):
+    def setUp(self):
+        self.job = JobPosting.objects.create(
+            title="Machine Operator", description="Runs the paper machine.")
+        self.url = reverse("main:job_detail", args=[self.job.pk])
+        super().setUp()
+
+
+class GeneralApplicationLookalikeTests(ApplicationLookalikeMixin, TestCase):
+    def setUp(self):
+        self.url = reverse("main:general_application")
+        super().setUp()
