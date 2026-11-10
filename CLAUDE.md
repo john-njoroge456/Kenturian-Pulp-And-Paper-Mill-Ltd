@@ -35,6 +35,10 @@ They catch mail in `mail.outbox` and write CVs to a temporary folder, never to `
 - Contact email length (FX-24): 254 characters are accepted and 255 rejected, and the input has `maxlength="254"`.
 - Honeypots (FX-16): a filled `fax_number` or `website` redirects to `?sent=1`. It saves nothing, sends no email, stores no CV and never shows the value back.
 - Order honeypot (FX-35): a filled `kp_hp_check` redirects to `/order/?sent=1`, which shows a generic card with no reference or order details. It saves no order or items, sends no email, stores no LPO and leaves `placed_orders` alone. The field is named so autofill won't fill it. The multi-item formset and the no-JS note are unaffected.
+- Contact spam (FX-37):
+  - The visitor's confirmation email (contact, order and careers) carries no visitor text except a first-name greeting, so the forms can't be used to send someone's text to any address. A typed "Other" colour shows as "Other (as specified)".
+  - `count_links()` counts bare domains like `indexdomain.live` as well as `http(s)://` and `www.`. It skips email addresses, file names, `kenturian.co.ke`, decimals and abbreviations. Going over `MAX_LINKS` still shows a visible form error.
+  - A sender domain containing "kenturian" that isn't exactly `kenturian.co.ke` is dropped like a honeypot on all four forms: redirect to `?sent=1`, nothing kept, one log line with no submitted values.
 
 Not covered: the order-form business rules (colours, limits, phone rules), the admin report and Excel exports, the upload signature checks, and JS behaviour. The separate Selenium suite covers the browser.
 
