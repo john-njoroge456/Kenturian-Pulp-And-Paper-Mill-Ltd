@@ -992,7 +992,7 @@ class SpamLoggingTests(TestCase):
         main_logger = logging.getLogger("main")
         self.assertTrue(main_logger.isEnabledFor(logging.INFO))
         file_handlers = [h for h in main_logger.handlers
-                         if isinstance(h, logging.handlers.RotatingFileHandler)]
+                         if isinstance(h, logging.handlers.WatchedFileHandler)]
         self.assertEqual(len(file_handlers), 1)
         self.assertEqual(file_handlers[0].level, logging.INFO)
         self.assertEqual(logging.getLogger("django").level, logging.WARNING)

@@ -240,10 +240,11 @@ LOGGING = {
             # INFO keeps the honeypot and lookalike-sender drop lines (FX-37);
             # 'django' below still sends only WARNING and above
             'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
+            # Every Passenger worker only appends; none of them rotates the file.
+            # scripts/rotate_logs.sh renames it monthly (cPanel cron), and
+            # WatchedFileHandler notices the rename and reopens django.log (FX-38)
+            'class': 'logging.handlers.WatchedFileHandler',
             'filename': LOG_DIR / 'django.log',
-            'maxBytes': 5 * 1024 * 1024,   # 5 MB per file
-            'backupCount': 5,              # keep the last 5 files
             'formatter': 'standard',
         },
         'console': {'class': 'logging.StreamHandler', 'formatter': 'standard'},
