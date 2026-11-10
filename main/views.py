@@ -1,6 +1,7 @@
 import logging
 import mimetypes
 import os
+import re
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.defaultfilters import date as date_filter, floatformat
 from django.template.loader import render_to_string
@@ -14,7 +15,7 @@ from django.contrib import messages
 from django.views.decorators.cache import never_cache
 from django.db import IntegrityError, transaction
 from .models import OrderRequest
-from .forms import OrderRequestForm, OrderItemFormSet, MAX_ITEMS
+from .forms import OrderRequestForm, OrderItemFormSet, MAX_ITEMS, STANDARD_COLORS
 from django.http import Http404
 
 
@@ -26,10 +27,36 @@ from .forms import ContactForm, JobApplicationForm
 
 logger = logging.getLogger(__name__)
 
+# Letters with optional ' or - joins; no dots or digits, so no domain gets in
+FIRST_NAME_RE = re.compile(r"[^\W\d_]+(?:['’-][^\W\d_]+)*")
 
-def _order_item_lines(items):
+
+def first_name(name):
+    """The first word of a name, or None if it doesn't look like a name.
+    Confirmation emails go to any address a visitor types, so they carry no
+    visitor text except this (FX-37)."""
+    words = (name or "").split()
+    if words and len(words[0]) <= 30 and FIRST_NAME_RE.fullmatch(words[0]):
+        return words[0]
+    return None
+
+
+def _greeting(name):
+    first = first_name(name)
+    return f"Hi {first}," if first else "Hello,"
+
+
+def _client_color(color):
+    # A typed "Other" colour is visitor text, so the client copy hides it (FX-37)
+    if not color:
+        return "—"
+    return color if color in STANDARD_COLORS else "Other (as specified)"
+
+
+def _order_item_lines(items, for_client=False):
     return "\n".join(
-        f"  {n}. {i.item_description} | Colour: {i.color or '—'} | "
+        f"  {n}. {i.item_description} | Colour: "
+        f"{_client_color(i.color) if for_client else (i.color or '—')} | "
         f"Length: {floatformat(i.length, -2)} mm | GSM: {i.gsm} | "
         f"Qty: {intcomma(i.quantity)} kg"
         for n, i in enumerate(items, 1)
@@ -116,7 +143,10 @@ def order_request_view(request):
             items = list(order.items.all())
             item_lines = _order_item_lines(items)
             total_kg = sum(i.quantity for i in items)
-            email_ctx = {"order": order, "items": items, "total_kg": total_kg}
+            for item in items:
+                item.client_color = _client_color(item.color)
+            email_ctx = {"order": order, "items": items, "total_kg": total_kg,
+                         "first_name": first_name(order.contact_person)}
             html_company = render_to_string(
                 "emails/order_summary.html", {**email_ctx, "for_client": False})
             html_client = render_to_string(
@@ -161,11 +191,15 @@ def order_request_view(request):
                 logger.exception(
                     "Staff email failed for order %s", order.reference)
             client_subject = f"Your order request {order.reference} — Kenturian Pulp & Paper Mills Limited"
+            # Only our own values: the client copy goes to any address typed in (FX-37)
             client_message = (
-                f"Hi {order.contact_person},\n\n"
-                f"Thanks for your order request. Here's a copy for your records.\n\n"
-                f"{summary_text}"
-                f"{notes_text}\n"
+                f"{_greeting(order.contact_person)}\n\n"
+                f"Thanks for your order request. Here's a summary for your records.\n\n"
+                f"Reference: {order.reference}\n"
+                f"Items ({len(items)}):\n{_order_item_lines(items, for_client=True)}\n"
+                f"Total quantity: {intcomma(total_kg)} kg\n"
+                f"Preferred date: "
+                f"{date_filter(order.preferred_delivery_date, 'd M Y') or '—'}\n\n"
                 f"Our team will review your request and follow up shortly. "
                 f"Please quote reference {order.reference} in any correspondence.\n\n"
                 f"— Kenturian Pulp & Paper Mills Limited"
@@ -330,7 +364,8 @@ def _process_application(form, job=None):
         f"Phone: {cd['phone']}\n\n"
         f"Message:\n{cd['message']}"
     )
-    email_ctx = {"application": record, "job": job}
+    email_ctx = {"application": record, "job": job,
+                 "first_name": first_name(cd["name"])}
     html_staff = render_to_string(
         "emails/application.html", {**email_ctx, "for_client": False})
     html_client = render_to_string(
@@ -355,13 +390,12 @@ def _process_application(form, job=None):
              else "Thanks for your interest")
     closing = ("Our team will review your application and reach out if it's a good fit."
                if job else "We'll reach out if a matching opportunity opens up.")
+    # Only our own values: the copy goes to any address typed in (FX-37)
     client_message = (
-        f"Hi {cd['name']},\n\n"
-        f"{intro} — here's a copy for your records.\n\n"
+        f"{_greeting(cd['name'])}\n\n"
+        f"{intro}. We've received your application.\n\n"
         f"Reference: {record.reference}\n"
-        f"{position_line}"
-        f"Phone: {cd['phone']}\n\n"
-        f"Your message:\n{cd['message']}\n\n"
+        f"{position_line}\n"
         f"{closing} Please quote reference {record.reference} in any follow-up.\n\n"
         f"— Kenturian Pulp & Paper Mills Limited"
     )
@@ -474,10 +508,11 @@ def contact_view(request):
                 return redirect(reverse('main:contact') + '?sent=1')
             subject = f"New enquiry from {cd['name']} — {cd['subject']} (Ref {record.reference})"
             message = f"Reference: {record.reference}\nFrom: {cd['name']} <{cd['email']}>\n\n{cd['message']}"
+            email_ctx = {"record": record, "first_name": first_name(cd['name'])}
             html_staff = render_to_string(
-                "emails/contact_message.html", {"record": record, "for_client": False})
+                "emails/contact_message.html", {**email_ctx, "for_client": False})
             html_client = render_to_string(
-                "emails/contact_message.html", {"record": record, "for_client": True})
+                "emails/contact_message.html", {**email_ctx, "for_client": True})
             try:
                 staff_email = EmailMultiAlternatives(
                     subject, message, settings.DEFAULT_FROM_EMAIL,
@@ -489,12 +524,12 @@ def contact_view(request):
                     "Staff email failed for contact %s", record.reference)
 
             client_subject = f"We've received your message — Ref {record.reference}"
+            # Only our own values: the copy goes to any address typed in (FX-37)
             client_message = (
-                f"Hi {cd['name']},\n\n"
-                f"Thanks for reaching out — here's a copy for your records.\n\n"
-                f"Reference: {record.reference}\n"
-                f"Subject: {cd['subject']}\n\n"
-                f"{cd['message']}\n\n"
+                f"{_greeting(cd['name'])}\n\n"
+                f"Thanks for contacting Kenturian Pulp & Paper Mills Limited. "
+                f"We've received your message.\n\n"
+                f"Reference: {record.reference}\n\n"
                 f"Our team will get back to you shortly. Please quote reference {record.reference} "
                 f"in any follow-up.\n\n"
                 f"— Kenturian Pulp & Paper Mills Limited"

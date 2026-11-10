@@ -4,8 +4,9 @@
 
 {% block content %}
   {% if for_client %}
-    <p style="margin-top:0;">Hi {{ application.name }},</p>
-    <p>{% if job %}Thanks for applying for <strong>{{ job.title }}</strong>.{% else %}Thanks for your interest in working with us.{% endif %} Here's a copy for your records.</p>
+    {# Only our own values: this copy goes to any address typed in (FX-37) #}
+    <p style="margin-top:0;">{% if first_name %}Hi {{ first_name }},{% else %}Hello,{% endif %}</p>
+    <p>{% if job %}Thanks for applying for <strong>{{ job.title }}</strong>.{% else %}Thanks for your interest in working with us.{% endif %} We've received your application.</p>
   {% else %}
     <p style="margin-top:0;"><strong>{{ application.name }}</strong> {% if job %}applied for <strong>{{ job.title }}</strong>{% else %}sent a speculative CV{% endif %}.</p>
   {% endif %}
@@ -16,17 +17,17 @@
     {% if not for_client %}
     <tr><td style="padding:3px 0;color:#6b7280;">Name</td><td>{{ application.name }}</td></tr>
     <tr><td style="padding:3px 0;color:#6b7280;">Email</td><td>{{ application.email }}</td></tr>
-    {% endif %}
     <tr><td style="padding:3px 0;color:#6b7280;">Phone</td><td>{{ application.phone|default:"—" }}</td></tr>
-    {% if not for_client %}
     <tr><td style="padding:3px 0;color:#6b7280;">CV</td><td>Attached to this email</td></tr>
     {% endif %}
   </table>
 
-  <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">{% if for_client %}Your message{% else %}Message from the applicant{% endif %}</div>
+  {% if not for_client %}
+  <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">Message from the applicant</div>
   <div style="background:#f7f8fa;border-left:3px solid #d9a441;border-radius:6px;padding:12px 14px;font-size:14px;">
     {{ application.message|linebreaksbr }}
   </div>
+  {% endif %}
 
   {% if for_client %}
     <p style="margin-bottom:0;">

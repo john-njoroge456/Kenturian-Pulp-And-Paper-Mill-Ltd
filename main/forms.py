@@ -31,6 +31,12 @@ FIXED_COLORS = [
     ("tissue", "White"),
 ]
 
+# Colours from our own lists; anything else was typed in under "Other"
+STANDARD_COLORS = (
+    {value for value, _ in COLOR_CHOICES if value and value != "Other"}
+    | {color for _, color in FIXED_COLORS}
+)
+
 # (word found in the item name, colours that item is never made in)
 BLOCKED_COLORS = [
     ("mg cover", ["White"]),

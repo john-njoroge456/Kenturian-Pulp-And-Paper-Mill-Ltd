@@ -654,3 +654,103 @@ class NavActiveTests(TestCase):
 
     def test_other_pages_unaffected(self):
         self.assertActive(reverse("main:about"), news=False, careers=False)
+
+
+class ConfirmationEmailMixin:
+    """FX-37: the visitor's copy goes to whatever address was typed in, so it
+    carries no visitor text apart from the first name."""
+
+    def emails_to(self, address):
+        sent = [m for m in mail.outbox if m.to == [address]]
+        self.assertEqual(len(sent), 1)
+        message = sent[0]
+        return message.body, message.alternatives[0][0]
+
+    def assert_client_copy_clean(self, address, markers, greeting="Hi Jane,"):
+        for part in self.emails_to(address):
+            self.assertIn(greeting, part)
+            for marker in markers:
+                self.assertNotIn(marker, part)
+
+    def assert_staff_copy_full(self, markers):
+        staff = [m for m in mail.outbox if m.to != ["jane@example.com"]]
+        self.assertEqual(len(staff), 1)
+        # The plain contact body leaves the subject to the email's subject line
+        plain = f"{staff[0].subject}\n{staff[0].body}"
+        for part in (plain, staff[0].alternatives[0][0]):
+            for marker in markers:
+                self.assertIn(marker, part)
+
+
+class ContactConfirmationEmailTests(ConfirmationEmailMixin, TestCase):
+    def post(self, name="Jane Doe"):
+        return self.client.post(reverse("main:contact"), {
+            "name": name,
+            "email": "jane@example.com",
+            "subject": "Subjectmarker for kenturian.co.ke",
+            "message": "Messagemarker: Submit kenturian.co.ke now: indexhelper.live",
+            "fax_number": "",
+        })
+
+    def test_client_copy_has_no_visitor_text(self):
+        self.post()
+        record = ContactMessage.objects.get()
+        self.assert_client_copy_clean(
+            "jane@example.com", ["Jane Doe", "Subjectmarker", "Messagemarker", "indexhelper"])
+        for part in self.emails_to("jane@example.com"):
+            self.assertIn(record.reference, part)
+        self.assert_staff_copy_full(["Jane Doe", "Subjectmarker", "Messagemarker"])
+
+    def test_name_that_is_not_a_name_gets_plain_greeting(self):
+        self.post(name="indexhelper.live Smith")
+        self.assert_client_copy_clean(
+            "jane@example.com", ["indexhelper", "Smith"], greeting="Hello,")
+
+
+class OrderConfirmationEmailTests(OrderFormMixin, ConfirmationEmailMixin, TestCase):
+    def test_client_copy_has_no_visitor_text(self):
+        data = self.order_data(self.get_token(), gsms=("80", "100"))
+        data.update({
+            "delivery_location": "Locationmarker",
+            "notes": "Notesmarker indexdomain.live",
+            "items-1-color": "Other",
+            "items-1-color_other": "Colourmarker",
+        })
+        self.client.post(self.order_url, data)
+        order = OrderRequest.objects.get()
+        markers = ["Jane Doe", "Locationmarker", "Notesmarker", "indexdomain", "Colourmarker"]
+        self.assert_client_copy_clean("jane@example.com", markers)
+        for part in self.emails_to("jane@example.com"):
+            self.assertIn(order.reference, part)
+            self.assertIn("Kraft Liner", part)
+            self.assertIn("Brown", part)
+            self.assertIn("Other (as specified)", part)
+        self.assert_staff_copy_full(["Jane Doe", "Locationmarker", "Notesmarker", "Colourmarker"])
+
+
+class ApplicationConfirmationEmailMixin(ApplicationFormMixin, ConfirmationEmailMixin):
+    def test_client_copy_has_no_visitor_text(self):
+        self.client.post(self.url, self.app_data(
+            self.get_token(), message="Messagemarker: see indexhelper.live for my work."))
+        record = JobApplication.objects.get()
+        self.assert_client_copy_clean(
+            "jane@example.com", ["Jane Doe", record.phone, "Messagemarker", "indexhelper"])
+        for part in self.emails_to("jane@example.com"):
+            self.assertIn(record.reference, part)
+            if self.job:
+                self.assertIn(self.job.title, part)
+        self.assert_staff_copy_full(["Jane Doe", record.phone, "Messagemarker"])
+
+
+class JobApplicationConfirmationEmailTests(ApplicationConfirmationEmailMixin, TestCase):
+    def setUp(self):
+        self.job = JobPosting.objects.create(
+            title="Machine Operator", description="Runs the paper machine.")
+        self.url = reverse("main:job_detail", args=[self.job.pk])
+        super().setUp()
+
+
+class GeneralApplicationConfirmationEmailTests(ApplicationConfirmationEmailMixin, TestCase):
+    def setUp(self):
+        self.url = reverse("main:general_application")
+        super().setUp()
