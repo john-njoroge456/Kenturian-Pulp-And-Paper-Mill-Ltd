@@ -111,6 +111,8 @@ Production is shared cPanel hosting running Passenger (`passenger_wsgi.py`) with
 
 `./deploy.sh`, run on the server, pulls `main`, installs requirements, then runs `check`, `migrate` and `collectstatic` and restarts by touching `tmp/restart.txt`.
 
+`logs/django.log` is written by every Passenger worker through `WatchedFileHandler`, which never rotates the file itself (FX-38). `scripts/rotate_logs.sh` renames it monthly to `django-YYYY-MM.log` and deletes files older than about 6 months. It runs from a cPanel cron job (`0 0 1 * *`), set up once on the server.
+
 `mysite/__init__.py` installs PyMySQL as the MySQL driver because `mysqlclient` cannot be compiled on the host. Migrations need to work on both SQLite and MariaDB.
 
 `staticfiles/` is generated. `media/`, `private_media/`, `db.sqlite3`, `content.json`, `orders_backup.json` and `media.zip` are git-ignored local data, and the backups contain real client information.
