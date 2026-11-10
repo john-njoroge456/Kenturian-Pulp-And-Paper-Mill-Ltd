@@ -90,7 +90,10 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+        # Shared-host MariaDB closes idle connections (wait_timeout). Check a kept
+        # connection before reusing it, and don't hold idle ones for long (FX-38)
+        'default': dj_database_url.parse(
+            DATABASE_URL, conn_max_age=60, conn_health_checks=True)
     }
 else:
     DATABASES = {
