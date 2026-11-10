@@ -1,3 +1,5 @@
+import logging
+import logging.handlers
 import os
 import shutil
 import tempfile
@@ -965,3 +967,32 @@ class GeneralApplicationLookalikeTests(ApplicationLookalikeMixin, TestCase):
     def setUp(self):
         self.url = reverse("main:general_application")
         super().setUp()
+
+
+class SpamLoggingTests(TestCase):
+    """FX-37: spam-drop lines are logged at INFO under 'main' and reach the log file."""
+
+    def test_lookalike_drop_logged_at_info_under_main(self):
+        with self.assertLogs("main", level="INFO") as logs:
+            self.client.post(reverse("main:contact"), {
+                "name": "Hyman",
+                "email": "domains@search-kenturian.co.ke",
+                "subject": "Results for kenturian.co.ke",
+                "message": SPAM_MESSAGES[0],
+                "fax_number": "",
+            })
+        self.assertEqual(len(logs.records), 1)
+        record = logs.records[0]
+        self.assertEqual(record.levelno, logging.INFO)
+        self.assertEqual(record.name, "main.views")
+        self.assertIn("Lookalike sender dropped", record.getMessage())
+
+    def test_configured_levels_keep_info_lines(self):
+        # assertLogs lowers the level itself, so check the real settings too
+        main_logger = logging.getLogger("main")
+        self.assertTrue(main_logger.isEnabledFor(logging.INFO))
+        file_handlers = [h for h in main_logger.handlers
+                         if isinstance(h, logging.handlers.RotatingFileHandler)]
+        self.assertEqual(len(file_handlers), 1)
+        self.assertEqual(file_handlers[0].level, logging.INFO)
+        self.assertEqual(logging.getLogger("django").level, logging.WARNING)

@@ -234,7 +234,9 @@ LOGGING = {
     },
     'handlers': {
         'file': {
-            'level': 'WARNING',
+            # INFO keeps the honeypot and lookalike-sender drop lines (FX-37);
+            # 'django' below still sends only WARNING and above
+            'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': LOG_DIR / 'django.log',
             'maxBytes': 5 * 1024 * 1024,   # 5 MB per file
@@ -245,6 +247,6 @@ LOGGING = {
     },
     'loggers': {
         'django': {'handlers': ['file', 'console'], 'level': 'WARNING', 'propagate': False},
-        'main': {'handlers': ['file', 'console'], 'level': 'WARNING', 'propagate': False},
+        'main': {'handlers': ['file', 'console'], 'level': 'INFO', 'propagate': False},
     },
 }
