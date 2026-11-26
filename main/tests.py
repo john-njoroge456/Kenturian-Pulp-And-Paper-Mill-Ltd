@@ -21,6 +21,7 @@ from .models import (
     OrderItemOption,
     OrderRequest,
 )
+from .templatetags.text_extras import format_job_description
 
 
 class OrderFormMixin:
@@ -996,3 +997,64 @@ class SpamLoggingTests(TestCase):
         self.assertEqual(len(file_handlers), 1)
         self.assertEqual(file_handlers[0].level, logging.INFO)
         self.assertEqual(logging.getLogger("django").level, logging.WARNING)
+
+
+class JobDescriptionFormatTests(TestCase):
+    """format_job_description turns plain-text job descriptions into safe HTML."""
+
+    def test_heading(self):
+        self.assertEqual(format_job_description("Responsibilities:"),
+                         "<h3>Responsibilities</h3>")
+
+    def test_list(self):
+        self.assertEqual(
+            format_job_description("- Operate the paper machine\n- Keep shift records"),
+            "<ul><li>Operate the paper machine</li><li>Keep shift records</li></ul>",
+        )
+
+    def test_paragraph(self):
+        self.assertEqual(
+            format_job_description("We are hiring.\nJoin our Thika team."),
+            "<p>We are hiring.<br>Join our Thika team.</p>",
+        )
+
+    def test_mixed_content(self):
+        text = (
+            "We are looking for a machine operator.\n\n"
+            "Responsibilities:\n\n"
+            "- Run the line\n- Report faults\n\n"
+            "Apply before 30 June."
+        )
+        self.assertEqual(format_job_description(text), (
+            "<p>We are looking for a machine operator.</p>\n"
+            "<h3>Responsibilities</h3>\n"
+            "<ul><li>Run the line</li><li>Report faults</li></ul>\n"
+            "<p>Apply before 30 June.</p>"
+        ))
+
+    def test_heading_directly_followed_by_list(self):
+        text = "Requirements:\r\n- Diploma\r\n- 2 years' experience\r\nSkills:\r\n- Teamwork"
+        self.assertEqual(format_job_description(text), (
+            "<h3>Requirements</h3>\n"
+            "<ul><li>Diploma</li><li>2 years&#x27; experience</li></ul>\n"
+            "<h3>Skills</h3>\n"
+            "<ul><li>Teamwork</li></ul>"
+        ))
+
+    def test_html_is_escaped(self):
+        text = (
+            "<b>Bold</b> intro\n\n"
+            "<script>alert(1)</script>:\n"
+            '- <img src=x onerror="alert(1)">'
+        )
+        html = format_job_description(text)
+        self.assertNotIn("<script>", html)
+        self.assertNotIn("<img", html)
+        self.assertNotIn("<b>", html)
+        self.assertIn("<p>&lt;b&gt;Bold&lt;/b&gt; intro</p>", html)
+        self.assertIn("<h3>&lt;script&gt;alert(1)&lt;/script&gt;</h3>", html)
+        self.assertIn("<li>&lt;img src=x onerror=&quot;alert(1)&quot;&gt;</li>", html)
+
+    def test_empty(self):
+        self.assertEqual(format_job_description(""), "")
+        self.assertEqual(format_job_description(None), "")

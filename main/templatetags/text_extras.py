@@ -1,6 +1,51 @@
+import re
+
 from django import template
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
 
 register = template.Library()
+
+_BLANK_LINE = re.compile(r"\n\s*\n")
+_LIST_PREFIX = "- "
+
+
+@register.filter
+def format_job_description(value):
+    """Format a plain-text job description as headings, lists and paragraphs.
+
+    Blocks are separated by blank lines. Within a block, a line ending in ":"
+    becomes an <h3>, consecutive lines starting with "- " become a <ul>, and
+    other consecutive lines become a <p> (single line breaks kept as <br>).
+    The text is escaped first, so no HTML in the input reaches the page.
+    """
+    text = escape(str(value or "")).replace("\r\n", "\n").replace("\r", "\n").strip()
+    if not text:
+        return ""
+
+    parts = []
+    for block in _BLANK_LINE.split(text):
+        lines = [line.strip() for line in block.split("\n") if line.strip()]
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            if line.startswith(_LIST_PREFIX):
+                items = []
+                while i < len(lines) and lines[i].startswith(_LIST_PREFIX):
+                    items.append(lines[i][len(_LIST_PREFIX):].strip())
+                    i += 1
+                parts.append("<ul>" + "".join(f"<li>{item}</li>" for item in items) + "</ul>")
+            elif line.endswith(":"):
+                parts.append(f"<h3>{line[:-1].rstrip()}</h3>")
+                i += 1
+            else:
+                para = []
+                while (i < len(lines) and not lines[i].startswith(_LIST_PREFIX)
+                       and not lines[i].endswith(":")):
+                    para.append(lines[i])
+                    i += 1
+                parts.append("<p>" + "<br>".join(para) + "</p>")
+    return mark_safe("\n".join(parts))
 
 
 @register.filter

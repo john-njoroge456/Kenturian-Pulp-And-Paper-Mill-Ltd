@@ -1264,6 +1264,31 @@ h1, .hero-title {
 .job-detail-body p {
   margin-bottom: 1.1rem;
 }
+
+/* Headings and lists produced by the format_job_description filter */
+.job-detail-body h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #14335c;
+  margin: 1.75rem 0 0.6rem;
+}
+.job-detail-body h3:first-child {
+  margin-top: 0;
+}
+.job-detail-body ul {
+  padding-left: 1.25rem;
+  margin-bottom: 1.1rem;
+}
+.job-detail-body li {
+  margin-bottom: 0.35rem;
+}
+.job-detail-body li::marker {
+  color: var(--brand-gold);
+}
+.job-detail-body > :last-child {
+  margin-bottom: 0;
+}
 /* Employee stories - true filmstrip carousel */
 .stories-viewport {
   overflow: hidden;
