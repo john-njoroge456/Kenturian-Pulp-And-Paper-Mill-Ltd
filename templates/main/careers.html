@@ -75,7 +75,7 @@
   {% if job.employment_type %}<span><i class="bi bi-clock"></i> {{ job.employment_type }}</span>{% endif %}
   {% if job.qualification %}<span><i class="bi bi-mortarboard"></i> {{ job.get_qualification_display }}</span>{% endif %}
 </div>
-    <p>{{ job.description|truncatewords:35 }}</p>
+    <p>{% if job.summary %}{{ job.summary }}{% else %}{{ job.description|truncatewords:35 }}{% endif %}</p>
    <a href="{% url 'main:job_detail' job.pk %}" class="btn btn-arrow-circle btn-light-arrow">
   View &amp; Apply <i class="bi bi-arrow-up-right"></i>
 </a>

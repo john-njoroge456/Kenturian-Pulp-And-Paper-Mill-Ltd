@@ -241,6 +241,9 @@ class JobPosting(models.Model):
     ]
 
     title = models.CharField(max_length=255)
+    summary = models.CharField(
+        max_length=250, blank=True,
+        help_text="One or two sentences shown on the Careers page card.")
     department = models.CharField(max_length=100, blank=True)
     location = models.CharField(max_length=100, blank=True)
     employment_type = models.CharField(

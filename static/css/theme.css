@@ -1087,6 +1087,8 @@ h1, .hero-title {
   box-shadow: 0 4px 16px rgba(20,51,92,0.08);
   border-top: 4px solid var(--brand-gold);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .job-card:hover {
@@ -1117,6 +1119,12 @@ h1, .hero-title {
 .job-card p {
   color: #444;
   margin-bottom: 1.25rem;
+  max-width: none; /* undo the 480px cap from .vacancies-section p */
+}
+
+.job-card .btn {
+  margin-top: auto;        /* push the button to the bottom of the card */
+  align-self: flex-start;  /* keep its natural width inside the flex column */
 }
 
 .no-vacancies {
